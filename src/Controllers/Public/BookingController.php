@@ -28,7 +28,7 @@ class BookingController {
             ORDER BY CASE WHEN divi.name IS NULL THEN 1 ELSE 0 END, divi.name ASC, e.full_name ASC
         ")->fetchAll();
         $cars = $db->query("SELECT * FROM car_detail WHERE status = 'Active' ORDER BY license_plate ASC")->fetchAll();
-        $agreements = $db->query("SELECT * FROM booking_agreements ORDER BY id ASC")->fetchAll();
+        $agreements = $db->query("SELECT * FROM booking_agreements ORDER BY sort_order ASC, id ASC")->fetchAll();
 
         // 77 Thai provinces list for the checklist
         $provinces = [

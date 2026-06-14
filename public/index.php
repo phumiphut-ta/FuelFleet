@@ -117,6 +117,7 @@ $router->get('/admin/agreements', [App\Controllers\Admin\AgreementController::cl
 $router->post('/admin/agreements/create', [App\Controllers\Admin\AgreementController::class, 'create']);
 $router->post('/admin/agreements/update/{id}', [App\Controllers\Admin\AgreementController::class, 'update']);
 $router->post('/admin/agreements/delete/{id}', [App\Controllers\Admin\AgreementController::class, 'delete']);
+$router->post('/admin/agreements/reorder', [App\Controllers\Admin\AgreementController::class, 'reorder']);
 
 // 3.11 Historical Data Import Management
 $router->get('/admin/history-import', [App\Controllers\Admin\HistoryImportController::class, 'index']);

@@ -15,7 +15,7 @@ class AgreementController {
 
     public function index(Request $request, Response $response) {
         $db = Database::getConnection();
-        $agreements = $db->query("SELECT * FROM booking_agreements ORDER BY id ASC")->fetchAll();
+        $agreements = $db->query("SELECT * FROM booking_agreements ORDER BY sort_order ASC, id ASC")->fetchAll();
 
         $success = $_SESSION['agreement_success'] ?? null;
         $error = $_SESSION['agreement_error'] ?? null;
@@ -41,8 +41,9 @@ class AgreementController {
 
         try {
             $db = Database::getConnection();
-            $stmt = $db->prepare("INSERT INTO booking_agreements (agreement_text) VALUES (:text)");
-            $stmt->execute(['text' => $text]);
+            $maxSort = (int)$db->query("SELECT MAX(sort_order) FROM booking_agreements")->fetchColumn();
+            $stmt = $db->prepare("INSERT INTO booking_agreements (agreement_text, sort_order) VALUES (:text, :so)");
+            $stmt->execute(['text' => $text, 'so' => $maxSort + 1]);
             $newId = (int)$db->lastInsertId();
 
             // Log Audit Log
@@ -146,6 +147,76 @@ class AgreementController {
             $_SESSION['agreement_success'] = 'ลบข้อตกลงการจองรถยนต์เรียบร้อยแล้ว';
         } catch (Exception $e) {
             $_SESSION['agreement_error'] = 'เกิดข้อผิดพลาดในการลบ: ' . $e->getMessage();
+        }
+
+        $response->redirect('/admin/agreements');
+    }
+
+    public function reorder(Request $request, Response $response) {
+        $body = $request->getBody();
+        $targetId = (int)($body['id'] ?? 0);
+        $direction = trim($body['direction'] ?? '');
+
+        if ($targetId <= 0 || !in_array($direction, ['up', 'down'])) {
+            $_SESSION['agreement_error'] = 'ข้อมูลการจัดเรียงไม่ถูกต้อง';
+            $response->redirect('/admin/agreements');
+            return;
+        }
+
+        try {
+            $db = Database::getConnection();
+            $db->beginTransaction();
+
+            // Re-sequence all agreements to ensure unique sequential sort_order values
+            $agreements = $db->query("SELECT * FROM booking_agreements ORDER BY sort_order ASC, id ASC")->fetchAll();
+            $stmtUpdate = $db->prepare("UPDATE booking_agreements SET sort_order = :so WHERE id = :id");
+            foreach ($agreements as $index => $a) {
+                $stmtUpdate->execute(['so' => $index + 1, 'id' => $a['id']]);
+                $agreements[$index]['sort_order'] = $index + 1;
+            }
+
+            $targetIndex = -1;
+            foreach ($agreements as $index => $a) {
+                if ((int)$a['id'] === $targetId) {
+                    $targetIndex = $index;
+                    break;
+                }
+            }
+
+            if ($targetIndex !== -1) {
+                if ($direction === 'up' && $targetIndex > 0) {
+                    $prevAgreement = $agreements[$targetIndex - 1];
+                    $targetAgreement = $agreements[$targetIndex];
+                    
+                    // Swap sort_order values
+                    $stmt = $db->prepare("UPDATE booking_agreements SET sort_order = :so WHERE id = :id");
+                    $stmt->execute(['so' => $prevAgreement['sort_order'], 'id' => $targetAgreement['id']]);
+                    $stmt->execute(['so' => $targetAgreement['sort_order'], 'id' => $prevAgreement['id']]);
+                    
+                    $_SESSION['agreement_success'] = 'เลื่อนลำดับข้อตกลงขึ้นเรียบร้อยแล้ว';
+                } elseif ($direction === 'down' && $targetIndex < count($agreements) - 1) {
+                    $nextAgreement = $agreements[$targetIndex + 1];
+                    $targetAgreement = $agreements[$targetIndex];
+                    
+                    // Swap sort_order values
+                    $stmt = $db->prepare("UPDATE booking_agreements SET sort_order = :so WHERE id = :id");
+                    $stmt->execute(['so' => $nextAgreement['sort_order'], 'id' => $targetAgreement['id']]);
+                    $stmt->execute(['so' => $targetAgreement['sort_order'], 'id' => $nextAgreement['id']]);
+                    
+                    $_SESSION['agreement_success'] = 'เลื่อนลำดับข้อตกลงลงเรียบร้อยแล้ว';
+                } else {
+                    $_SESSION['agreement_error'] = 'ไม่สามารถเลื่อนลำดับในทิศทางที่เลือกได้';
+                }
+            } else {
+                $_SESSION['agreement_error'] = 'ไม่พบข้อตกลงที่ต้องการจัดเรียง';
+            }
+
+            $db->commit();
+        } catch (Exception $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            $_SESSION['agreement_error'] = 'เกิดข้อผิดพลาดในการจัดเรียง: ' . $e->getMessage();
         }
 
         $response->redirect('/admin/agreements');

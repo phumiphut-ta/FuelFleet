@@ -281,11 +281,12 @@ INSERT INTO system_settings (setting_key, setting_value, description) VALUES
 CREATE TABLE booking_agreements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     agreement_text TEXT NOT NULL,
+    sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO booking_agreements (agreement_text) VALUES 
-('ผู้ขอใช้รถจะต้องดูแลความสะอาดและรักษาทรัพย์สินของทางราชการตลอดการเดินทาง'),
-('ผู้ขอใช้รถจะต้องส่งคืนกุญแจรถพร้อมบันทึกเลขไมล์และแนบใบเสร็จน้ำมันทันทีหลังเสร็จสิ้นภารกิจ'),
-('หากเกิดอุบัติเหตุหรือรถยนต์ขัดข้องในระหว่างเดินทาง ต้องรายงานผู้บริหารและประสานงานฝ่ายกองกลางทันที');
+INSERT INTO booking_agreements (agreement_text, sort_order) VALUES 
+('ผู้ขอใช้รถจะต้องดูแลความสะอาดและรักษาทรัพย์สินของทางราชการตลอดการเดินทาง', 1),
+('ผู้ขอใช้รถจะต้องส่งคืนกุญแจรถพร้อมบันทึกเลขไมล์และแนบใบเสร็จน้ำมันทันทีหลังเสร็จสิ้นภารกิจ', 2),
+('หากเกิดอุบัติเหตุหรือรถยนต์ขัดข้องในระหว่างเดินทาง ต้องรายงานผู้บริหารและประสานงานฝ่ายกองกลางทันที', 3);
 

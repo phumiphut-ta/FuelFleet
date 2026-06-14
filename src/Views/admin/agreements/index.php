@@ -51,6 +51,7 @@
                         <thead class="bg-slate-900/40 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                             <tr>
                                 <th class="px-6 py-4 w-16 text-center">ลำดับ</th>
+                                <th class="px-6 py-4 w-24 text-center">จัดเรียง</th>
                                 <th class="px-6 py-4">ข้อตกลงการจองรถยนต์</th>
                                 <th class="px-6 py-4 text-right w-48">การจัดการ</th>
                             </tr>
@@ -58,12 +59,43 @@
                         <tbody class="divide-y divide-slate-800/40 bg-slate-900/10 text-slate-300">
                             <?php if (empty($agreements)): ?>
                                 <tr>
-                                    <td colspan="3" class="px-6 py-12 text-center text-slate-550 italic font-light">ยังไม่มีการกำหนดข้อตกลงในระบบ ปุ่มจองรถสาธารณะจะแสดงผลได้โดยไม่ต้องเช็คเลือกกล่องเงื่อนไข</td>
+                                    <td colspan="4" class="px-6 py-12 text-center text-slate-550 italic font-light">ยังไม่มีการกำหนดข้อตกลงในระบบ ปุ่มจองรถสาธารณะจะแสดงผลได้โดยไม่ต้องเช็คเลือกกล่องเงื่อนไข</td>
                                 </tr>
                             <?php else: ?>
-                                <?php $idx = 1; foreach ($agreements as $a): ?>
+                                <?php $idx = 1; $total = count($agreements); foreach ($agreements as $a): ?>
                                     <tr class="hover:bg-slate-800/10 transition">
-                                        <td class="px-6 py-4 text-center font-mono text-slate-500"><?= $idx++ ?></td>
+                                        <td class="px-6 py-4 text-center font-mono text-slate-500"><?= $idx ?></td>
+                                        <td class="px-6 py-4 text-center">
+                                            <div class="flex items-center justify-center gap-1">
+                                                <?php if ($idx > 1): ?>
+                                                    <form action="/admin/agreements/reorder" method="POST" class="inline">
+                                                        <input type="hidden" name="id" value="<?= $a['id'] ?>">
+                                                        <input type="hidden" name="direction" value="up">
+                                                        <button type="submit" class="p-1.5 bg-slate-850 hover:bg-indigo-600 text-slate-400 hover:text-white rounded-lg transition duration-200" title="เลื่อนขึ้น">
+                                                            <i class="fa-solid fa-arrow-up text-[10px]"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <button class="p-1.5 bg-slate-900/40 text-slate-700 rounded-lg cursor-not-allowed opacity-30" disabled>
+                                                        <i class="fa-solid fa-arrow-up text-[10px]"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($idx < $total): ?>
+                                                    <form action="/admin/agreements/reorder" method="POST" class="inline">
+                                                        <input type="hidden" name="id" value="<?= $a['id'] ?>">
+                                                        <input type="hidden" name="direction" value="down">
+                                                        <button type="submit" class="p-1.5 bg-slate-850 hover:bg-indigo-600 text-slate-400 hover:text-white rounded-lg transition duration-200" title="เลื่อนลง">
+                                                            <i class="fa-solid fa-arrow-down text-[10px]"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <button class="p-1.5 bg-slate-900/40 text-slate-700 rounded-lg cursor-not-allowed opacity-30" disabled>
+                                                        <i class="fa-solid fa-arrow-down text-[10px]"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
                                         <td class="px-6 py-4">
                                             <!-- Normal View -->
                                             <div x-show="editingId !== <?= $a['id'] ?>" class="text-slate-200 leading-relaxed font-light">
@@ -96,6 +128,7 @@
                                         <!-- Keep column width when editing -->
                                         <td class="px-6 py-4 text-right whitespace-nowrap text-xs" x-show="editingId === <?= $a['id'] ?>" style="display: none;"></td>
                                     </tr>
+                                    <?php $idx++; ?>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
