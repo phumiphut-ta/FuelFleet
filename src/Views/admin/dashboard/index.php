@@ -214,27 +214,30 @@
     document.addEventListener('DOMContentLoaded', function() {
         // 1. Fuel usage trend data
         const fuelTrendCtx = document.getElementById('fuelTrendChart').getContext('2d');
-        const monthlyLabels = <?= json_encode(array_column($monthlyUsageStats, 'month_label')) ?>;
-        const monthlyData   = <?= json_encode(array_column($monthlyUsageStats, 'total_liters')) ?>;
+        const monthlyLabels = <?= json_encode($chartMonthLabels) ?>;
+        const monthlyDatasets = <?= json_encode($chartDatasets) ?>;
 
         new Chart(fuelTrendCtx, {
             type: 'line',
             data: {
                 labels: monthlyLabels.length > 0 ? monthlyLabels : ['ไม่มีข้อมูล'],
-                datasets: [{
-                    label: 'ยอดเติมน้ำมัน (ลิตร)',
-                    data: monthlyData.length > 0 ? monthlyData : [0],
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 2
-                }]
+                datasets: monthlyDatasets.length > 0 ? monthlyDatasets : []
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#94a3b8',
+                            font: { size: 10 },
+                            boxWidth: 12,
+                            padding: 8
+                        }
+                    }
+                },
                 scales: {
                     x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
                     y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }

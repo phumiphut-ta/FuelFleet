@@ -59,14 +59,57 @@ class DashboardController {
         // CHARTS DATA PREPARATION
         // ==========================================
 
-        // Chart 1: Monthly Fuel Liters sum for last 6 months
-        $monthlyUsageStats = $db->query("
-            SELECT DATE_FORMAT(receipt_date, '%b %Y') AS month_label, SUM(liters) AS total_liters
+        // Chart 1: Monthly fuel liters for the last 12 months (11 months ago to current month), split by car
+        $months = [];
+        $monthLabels = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $ts = strtotime("-$i months");
+            $months[] = date('Y-m', $ts);
+            
+            $thaiShortMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            $mIndex = (int)date('n', $ts);
+            $yearThaiShort = substr((string)(date('Y', $ts) + 543), -2);
+            $monthLabels[] = $thaiShortMonths[$mIndex] . ' ' . $yearThaiShort;
+        }
+
+        // Fetch all cars (active or suspended)
+        $carsForChart = $db->query("SELECT id, license_plate, color FROM car_detail ORDER BY license_plate ASC")->fetchAll();
+        
+        $startDate = date('Y-m-01', strtotime("-11 months"));
+        $endDate = date('Y-m-t'); // End of current month
+        
+        $usageData = $db->query("
+            SELECT car_id, DATE_FORMAT(receipt_date, '%Y-%m') AS year_month, SUM(liters) AS total_liters
             FROM gas_receipt
-            WHERE status = 'Verified' AND receipt_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-            GROUP BY DATE_FORMAT(receipt_date, '%Y-%m'), month_label
-            ORDER BY DATE_FORMAT(receipt_date, '%Y-%m') ASC
+            WHERE status = 'Verified' AND receipt_date BETWEEN '{$startDate}' AND '{$endDate}'
+            GROUP BY car_id, DATE_FORMAT(receipt_date, '%Y-%m')
         ")->fetchAll();
+
+        $usageMap = [];
+        foreach ($usageData as $row) {
+            $usageMap[$row['car_id']][$row['year_month']] = (float)$row['total_liters'];
+        }
+
+        $chartDatasets = [];
+        foreach ($carsForChart as $car) {
+            $carId = (int)$car['id'];
+            $color = !empty($car['color']) ? $car['color'] : '#6366f1';
+            
+            $datasetData = [];
+            foreach ($months as $month) {
+                $datasetData[] = $usageMap[$carId][$month] ?? 0.0;
+            }
+            
+            $chartDatasets[] = [
+                'label' => $car['license_plate'],
+                'data' => $datasetData,
+                'borderColor' => $color,
+                'backgroundColor' => $color . '15',
+                'fill' => false,
+                'tension' => 0.4,
+                'borderWidth' => 2
+            ];
+        }
 
         // Chart 2: Province travel frequencies — Top 5 + อื่นๆ
         $provinceRaw = $db->query("
@@ -161,7 +204,8 @@ class DashboardController {
             'overQuotaCount'      => $overQuotaCount,
             'pendingReceipts'     => $pendingReceipts,
             'overQuotaList'       => $overQuotaList,
-            'monthlyUsageStats'   => $monthlyUsageStats,
+            'chartMonthLabels'     => $monthLabels,
+            'chartDatasets'        => $chartDatasets,
             'provinceTravelStats' => $provinceTravelStats,
             'quotaRemaining'      => $quotaRemaining,
             'cancelledBookings'   => $cancelledBookings,
