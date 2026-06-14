@@ -1,3 +1,11 @@
+<?php
+try {
+    $__db = \App\Core\Database::getConnection();
+    $__pendingCount = (int)$__db->query("SELECT COUNT(*) FROM car_booking WHERE status = 'Pending'")->fetchColumn();
+} catch (\Throwable $e) {
+    $__pendingCount = 0;
+}
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -91,8 +99,15 @@
             <a href="/admin/suspensions" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
                 <i class="fa-solid fa-ban text-slate-500 text-sm w-5"></i>คำสั่งระงับการใช้รถ
             </a>
-            <a href="/admin/bookings" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
-                <i class="fa-regular fa-calendar-check text-slate-500 text-sm w-5"></i>จัดการการจองรถยนต์
+            <a href="/admin/bookings" class="flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition">
+                <span class="flex items-center gap-2.5">
+                    <i class="fa-regular fa-calendar-check text-slate-500 text-sm w-5"></i>จัดการการจองรถยนต์
+                </span>
+                <?php if ($__pendingCount > 0): ?>
+                    <span class="px-1.5 py-0.5 text-[9px] font-extrabold bg-amber-500 text-slate-950 rounded-full animate-pulse">
+                        <?= $__pendingCount ?>
+                    </span>
+                <?php endif; ?>
             </a>
             <a href="/admin/agreements" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
                 <i class="fa-solid fa-list-check text-slate-500 text-sm w-5"></i>ข้อตกลงการจองรถยนต์
@@ -138,7 +153,13 @@
                 </button>
                 <h3 class="text-sm font-semibold text-slate-200">แผงควบคุมระบบบริหารจัดการรถและน้ำมันเชื้อเพลิง</h3>
             </div>
-            <div class="flex items-center space-x-3 text-xs text-slate-400">
+            <div class="flex items-center space-x-4 text-xs text-slate-400">
+                <?php if ($__pendingCount > 0): ?>
+                    <a href="/admin/bookings" class="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-450 hover:bg-amber-500/20 transition animate-pulse">
+                        <i class="fa-solid fa-bell text-[11px] text-amber-400"></i>
+                        <span class="text-[10px] font-extrabold tracking-tight">การจองรออนุมัติ <?= $__pendingCount ?> รายการ</span>
+                    </a>
+                <?php endif; ?>
                 <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span> <span class="hidden sm:inline">เชื่อมต่อฐานข้อมูลสำเร็จ</span></span>
             </div>
         </header>
