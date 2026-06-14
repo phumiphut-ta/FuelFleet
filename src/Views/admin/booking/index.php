@@ -281,7 +281,7 @@ function cancelBooking(id) {
     }
     
     const form = document.getElementById('cancel-booking-form');
-    form.action = '/admin/bookings/cancel/' + id;
+    form.action = '<?= \App\Core\Request::getBasePath() ?>/admin/bookings/cancel/' + id;
     document.getElementById('cancel-booking-reason').value = trimmedReason;
     form.submit();
 }
