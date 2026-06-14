@@ -79,7 +79,7 @@ class DashboardController {
         $endDate = date('Y-m-t'); // End of current month
         
         $usageData = $db->query("
-            SELECT car_id, DATE_FORMAT(receipt_date, '%Y-%m') AS year_month, SUM(liters) AS total_liters
+            SELECT car_id, DATE_FORMAT(receipt_date, '%Y-%m') AS ym, SUM(liters) AS total_liters
             FROM gas_receipt
             WHERE status = 'Verified' AND receipt_date BETWEEN '{$startDate}' AND '{$endDate}'
             GROUP BY car_id, DATE_FORMAT(receipt_date, '%Y-%m')
@@ -87,7 +87,7 @@ class DashboardController {
 
         $usageMap = [];
         foreach ($usageData as $row) {
-            $usageMap[$row['car_id']][$row['year_month']] = (float)$row['total_liters'];
+            $usageMap[$row['car_id']][$row['ym']] = (float)$row['total_liters'];
         }
 
         $chartDatasets = [];
