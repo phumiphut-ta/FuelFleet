@@ -22,6 +22,8 @@ $router->get('/', [App\Controllers\Public\CalendarController::class, 'index']);
 $router->get('/api/calendar/events', [App\Controllers\Public\CalendarController::class, 'getEvents']);
 $router->get('/booking/new', [App\Controllers\Public\BookingController::class, 'new']);
 $router->post('/booking/create', [App\Controllers\Public\BookingController::class, 'create']);
+$router->get('/booking/edit/{id}', [App\Controllers\Public\BookingController::class, 'editPublic']);
+$router->post('/booking/update/{id}', [App\Controllers\Public\BookingController::class, 'updatePublic']);
 $router->post('/booking/cancel', [App\Controllers\Public\BookingController::class, 'cancel']);
 $router->get('/heatmap', [App\Controllers\Public\CalendarController::class, 'heatmap']);
 $router->get('/receipts/recent', [App\Controllers\Public\BookingController::class, 'recentReceipts']);
@@ -99,6 +101,7 @@ $router->get('/admin/bookings', [App\Controllers\Admin\BookingController::class,
 $router->get('/admin/bookings/export', [App\Controllers\Admin\BookingController::class, 'export']);
 $router->get('/admin/bookings/edit/{id}', [App\Controllers\Admin\BookingController::class, 'edit']);
 $router->post('/admin/bookings/update/{id}', [App\Controllers\Admin\BookingController::class, 'update']);
+$router->post('/admin/bookings/approve/{id}', [App\Controllers\Admin\BookingController::class, 'approve']);
 $router->post('/admin/bookings/cancel/{id}', [App\Controllers\Admin\BookingController::class, 'cancel']);
 
 // 3.9 Admin Users Management
@@ -108,6 +111,12 @@ $router->post('/admin/users/create', [App\Controllers\Admin\AdminUserController:
 $router->get('/admin/users/edit/{id}', [App\Controllers\Admin\AdminUserController::class, 'edit']);
 $router->post('/admin/users/update/{id}', [App\Controllers\Admin\AdminUserController::class, 'update']);
 $router->post('/admin/users/delete/{id}', [App\Controllers\Admin\AdminUserController::class, 'delete']);
+
+// 3.10 Booking Agreements Management
+$router->get('/admin/agreements', [App\Controllers\Admin\AgreementController::class, 'index']);
+$router->post('/admin/agreements/create', [App\Controllers\Admin\AgreementController::class, 'create']);
+$router->post('/admin/agreements/update/{id}', [App\Controllers\Admin\AgreementController::class, 'update']);
+$router->post('/admin/agreements/delete/{id}', [App\Controllers\Admin\AgreementController::class, 'delete']);
 
 // Resolve router and render views
 $router->resolve();

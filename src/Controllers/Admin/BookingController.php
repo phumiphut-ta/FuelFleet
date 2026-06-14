@@ -101,11 +101,13 @@ class BookingController {
             'จังหวัดปลายทาง',
             'วันที่เริ่มเดินทาง',
             'วันที่เดินทางกลับ',
-            'สถานะการจอง'
+            'สถานะการจอง',
+            'เหตุผลการยกเลิก'
         ]);
         
         $statusLabels = [
             'Confirmed' => 'อนุมัติการจองแล้ว',
+            'Pending' => 'รออนุมัติ',
             'Cancelled' => 'ยกเลิกการจองแล้ว'
         ];
 
@@ -121,7 +123,8 @@ class BookingController {
                 $provincesStr,
                 date('d/m/Y', strtotime($b['start_time'])),
                 date('d/m/Y', strtotime($b['end_time'])),
-                $statusLabel
+                $statusLabel,
+                $b['cancel_reason'] ?? ''
             ]);
         }
         
@@ -253,20 +256,66 @@ class BookingController {
         }
     }
 
+    public function approve(Request $request, Response $response, int $id) {
+        $booking = $this->bookingRepo->find($id);
+        if (!$booking) {
+            $_SESSION['booking_error'] = 'ไม่พบข้อมูลการจองที่ต้องการอนุมัติ';
+            $response->redirect('/admin/bookings');
+            return;
+        }
+
+        try {
+            $result = $this->bookingService->approveBooking($id);
+            if ($result['success']) {
+                // Log audit log
+                $db = Database::getConnection();
+                $stmtLog = $db->prepare("
+                    INSERT INTO audit_logs (user_id, username, action, table_name, record_id, previous_value, new_value)
+                    VALUES (:user_id, :username, 'Approve booking', 'car_booking', :record_id, :prev_value, :new_value)
+                ");
+                $stmtLog->execute([
+                    'user_id' => $_SESSION['admin_user']['id'],
+                    'username' => $_SESSION['admin_user']['username'],
+                    'record_id' => $id,
+                    'prev_value' => json_encode($booking),
+                    'new_value' => json_encode(['status' => 'Confirmed'])
+                ]);
+
+                $_SESSION['booking_success'] = $result['message'];
+            } else {
+                $_SESSION['booking_error'] = $result['message'];
+            }
+        } catch (Exception $e) {
+            $_SESSION['booking_error'] = 'เกิดข้อผิดพลาดในการอนุมัติ: ' . $e->getMessage();
+        }
+
+        $response->redirect('/admin/bookings');
+    }
+
     public function cancel(Request $request, Response $response, int $id) {
         $booking = $this->bookingRepo->find($id);
         if (!$booking) {
             $_SESSION['booking_error'] = 'ไม่พบข้อมูลการจองที่ต้องการยกเลิก';
             $response->redirect('/admin/bookings');
+            return;
         }
 
         if ($booking['status'] === 'Cancelled') {
             $_SESSION['booking_error'] = 'การจองนี้ถูกยกเลิกไปก่อนหน้านี้แล้ว';
             $response->redirect('/admin/bookings');
+            return;
+        }
+
+        $body = $request->getBody();
+        $reason = trim($body['cancel_reason'] ?? '');
+        if (empty($reason)) {
+            $_SESSION['booking_error'] = 'กรุณาระบุเหตุผลในการยกเลิกการจอง';
+            $response->redirect('/admin/bookings');
+            return;
         }
 
         try {
-            $this->bookingRepo->cancel($id);
+            $this->bookingRepo->cancelWithReason($id, $reason);
             $this->bookingRepo->addCancelLog($id);
 
             // Log audit log
@@ -280,7 +329,7 @@ class BookingController {
                 'username' => $_SESSION['admin_user']['username'],
                 'record_id' => $id,
                 'prev_value' => json_encode($booking),
-                'new_value' => json_encode(['status' => 'Cancelled'])
+                'new_value' => json_encode(['status' => 'Cancelled', 'cancel_reason' => $reason])
             ]);
 
             $_SESSION['booking_success'] = 'ยกเลิกการจองเรียบร้อยแล้ว';

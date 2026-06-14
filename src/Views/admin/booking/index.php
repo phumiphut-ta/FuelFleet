@@ -161,24 +161,43 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <?php if ($b['status'] === 'Confirmed'): ?>
                                         <span class="px-2 py-0.5 rounded-full border text-[9px] font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                                            ยืนยันอนุมัติจองแล้ว
+                                            อนุมัติแล้ว
+                                        </span>
+                                    <?php elseif ($b['status'] === 'Pending'): ?>
+                                        <span class="px-2 py-0.5 rounded-full border text-[9px] font-semibold bg-amber-500/10 text-amber-400 border-amber-500/20">
+                                            รออนุมัติ
                                         </span>
                                     <?php else: ?>
                                         <span class="px-2 py-0.5 rounded-full border text-[9px] font-semibold bg-rose-500/10 text-rose-400 border-rose-500/20">
-                                            ยกเลิกการจองแล้ว
+                                            ยกเลิกแล้ว
                                         </span>
+                                        <?php if (!empty($b['cancel_reason'])): ?>
+                                            <p class="text-[10px] text-rose-400/90 mt-1 max-w-[150px] whitespace-normal text-center mx-auto" title="<?= htmlspecialchars($b['cancel_reason']) ?>">
+                                                เหตุผล: <?= htmlspecialchars($b['cancel_reason']) ?>
+                                            </p>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-semibold space-x-1">
-                                    <?php if ($b['status'] === 'Confirmed'): ?>
-                                        <a href="/admin/bookings/edit/<?= $b['id'] ?>" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-750 hover:text-white rounded-lg transition duration-200 inline-block align-middle">
-                                            <i class="fa-solid fa-pen-to-square text-[10px] mr-1"></i> แก้ไข
-                                        </a>
-                                        <form action="/admin/bookings/cancel/<?= $b['id'] ?>" method="POST" class="inline" onsubmit="return confirm('ยืนยันที่จะยกเลิกประวัติการจองรถยนต์นี้? การทำรายการนี้จะทำลายสิทธิ์คิวรถทันที');">
-                                            <button type="submit" class="px-2.5 py-1 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition duration-200 align-middle">
-                                                <i class="fa-solid fa-ban text-[10px] mr-1"></i> ยกเลิกการจอง
+                                    <?php if ($b['status'] === 'Pending'): ?>
+                                        <form action="/admin/bookings/approve/<?= $b['id'] ?>" method="POST" class="inline">
+                                            <button type="submit" class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition duration-200 align-middle">
+                                                <i class="fa-solid fa-check text-[10px] mr-1"></i> อนุมัติ
                                             </button>
                                         </form>
+                                        <a href="/admin/bookings/edit/<?= $b['id'] ?>" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-350 border border-slate-750 hover:text-white rounded-lg transition duration-200 inline-block align-middle">
+                                            <i class="fa-solid fa-pen-to-square text-[10px] mr-1"></i> แก้ไข
+                                        </a>
+                                        <button type="button" onclick="cancelBooking(<?= $b['id'] ?>)" class="px-2.5 py-1 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition duration-200 align-middle">
+                                            <i class="fa-solid fa-ban text-[10px] mr-1"></i> ยกเลิก
+                                        </button>
+                                    <?php elseif ($b['status'] === 'Confirmed'): ?>
+                                        <a href="/admin/bookings/edit/<?= $b['id'] ?>" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-350 border border-slate-750 hover:text-white rounded-lg transition duration-200 inline-block align-middle">
+                                            <i class="fa-solid fa-pen-to-square text-[10px] mr-1"></i> แก้ไข
+                                        </a>
+                                        <button type="button" onclick="cancelBooking(<?= $b['id'] ?>)" class="px-2.5 py-1 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition duration-200 align-middle">
+                                            <i class="fa-solid fa-ban text-[10px] mr-1"></i> ยกเลิก
+                                        </button>
                                     <?php else: ?>
                                         <span class="text-slate-650 italic text-[11px] select-none">ปิดระบบการจัดการ</span>
                                     <?php endif; ?>
@@ -243,3 +262,27 @@
         <?php endif; ?>
     </div>
 </div>
+
+<!-- Hidden Cancel Form -->
+<form id="cancel-booking-form" method="POST" style="display:none;">
+    <input type="hidden" name="cancel_reason" id="cancel-booking-reason">
+</form>
+
+<script>
+function cancelBooking(id) {
+    const reason = prompt("กรุณาระบุเหตุผลในการยกเลิกการจองรถคันนี้:");
+    if (reason === null) {
+        return; // User clicked Cancel
+    }
+    const trimmedReason = reason.trim();
+    if (trimmedReason === "") {
+        alert("กรุณาระบุเหตุผลในการยกเลิกการจอง!");
+        return;
+    }
+    
+    const form = document.getElementById('cancel-booking-form');
+    form.action = '/admin/bookings/cancel/' + id;
+    document.getElementById('cancel-booking-reason').value = trimmedReason;
+    form.submit();
+}
+</script>

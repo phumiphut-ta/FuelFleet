@@ -94,6 +94,9 @@
             <a href="/admin/bookings" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
                 <i class="fa-regular fa-calendar-check text-slate-500 text-sm w-5"></i>จัดการการจองรถยนต์
             </a>
+            <a href="/admin/agreements" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
+                <i class="fa-solid fa-list-check text-slate-500 text-sm w-5"></i>ข้อตกลงการจองรถยนต์
+            </a>
             <a href="/admin/receipts" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
                 <i class="fa-solid fa-file-invoice-dollar text-slate-500 text-sm w-5"></i>ตรวจสอบใบเสร็จน้ำมัน
             </a>

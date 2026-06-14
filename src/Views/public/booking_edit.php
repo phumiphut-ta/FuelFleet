@@ -3,9 +3,9 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                <i class="fa-solid fa-file-signature text-indigo-400"></i> บันทึกยื่นคำขอจองใช้รถส่วนกลาง
+                <i class="fa-solid fa-pen-to-square text-indigo-400"></i> แก้ไขข้อมูลการจองรถยนต์ส่วนกลาง
             </h1>
-            <p class="text-xs text-slate-400 font-light mt-1">กรอกรายละเอียดเพื่อขอจองคิวรถยนต์ส่วนราชการ คอนเฟิร์มทันทีไม่ต้องรออนุมัติ</p>
+            <p class="text-xs text-slate-400 font-light mt-1">ปรับเปลี่ยนวันเดินทาง ทะเบียนรถยนต์ หรือเส้นทางจังหวัดปลายทางภารกิจ</p>
         </div>
         <a href="/" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-xs rounded-xl font-medium flex items-center gap-1.5 transition">
             <i class="fa-solid fa-arrow-left"></i> กลับหน้าปฏิทินคิวรถ
@@ -24,13 +24,8 @@
     <div class="glass-panel p-8 rounded-2xl border border-slate-800/80 max-w-4xl mx-auto relative overflow-hidden" 
         x-data="{ 
             provinceSearch: '',
-            selectedProvinces: [],
+            selectedProvinces: <?= htmlspecialchars(json_encode($booking['provinces'] ?? []), ENT_QUOTES, 'UTF-8') ?>,
             provincesList: <?= htmlspecialchars(json_encode($provinces), ENT_QUOTES, 'UTF-8') ?>,
-            checkedAgreements: [],
-            totalAgreements: <?= count($agreements ?? []) ?>,
-            get allAgreed() {
-                return this.checkedAgreements.length === this.totalAgreements;
-            },
             toggleProvince(prov) {
                 if (this.selectedProvinces.includes(prov)) {
                     this.selectedProvinces = this.selectedProvinces.filter(p => p !== prov);
@@ -40,7 +35,7 @@
             }
         }">
 
-        <form action="/booking/create" method="POST" class="space-y-6">
+        <form action="/booking/update/<?= $booking['id'] ?>" method="POST" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 <!-- Booker (Employee) -->
@@ -55,11 +50,11 @@
                     ?>
                     <select id="employee_id" name="employee_id" required 
                         class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                        <option value="" disabled selected>-- เลือกชื่อผู้จอง --</option>
+                        <option value="" disabled>-- เลือกชื่อผู้จอง --</option>
                         <?php foreach ($groupedEmployees as $divName => $emps): ?>
                             <optgroup label="<?= htmlspecialchars($divName) ?>" class="text-[10px] font-semibold text-indigo-400 bg-slate-950">
                                 <?php foreach ($emps as $emp): ?>
-                                    <option value="<?= $emp['id'] ?>" <?= isset($formData['employee_id']) && $formData['employee_id'] == $emp['id'] ? 'selected' : '' ?> class="text-xs text-slate-300 bg-slate-950">
+                                    <option value="<?= $emp['id'] ?>" <?= $booking['employee_id'] == $emp['id'] ? 'selected' : '' ?> class="text-xs text-slate-300 bg-slate-950">
                                         [<?= htmlspecialchars($emp['employee_code']) ?>] <?= htmlspecialchars($emp['full_name']) ?> (<?= htmlspecialchars($emp['position_name'] ?? 'พนักงาน') ?>)
                                     </option>
                                 <?php endforeach; ?>
@@ -73,32 +68,32 @@
                     <label for="car_id" class="block text-xs font-semibold text-slate-400 mb-2">ระบุรถยนต์ราชการที่จะใช้เดินทาง <span class="text-rose-500">*</span></label>
                     <select id="car_id" name="car_id" required 
                         class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                        <option value="" disabled selected>-- เลือกยานพาหนะ --</option>
+                        <option value="" disabled>-- เลือกยานพาหนะ --</option>
                         <?php foreach ($cars as $car): ?>
-                            <option value="<?= $car['id'] ?>" <?= isset($formData['car_id']) && $formData['car_id'] == $car['id'] ? 'selected' : '' ?>>
+                            <option value="<?= $car['id'] ?>" <?= $booking['car_id'] == $car['id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($car['license_plate']) ?> - รองรับ [<?= htmlspecialchars($car['fuel_type']) ?>] <?= htmlspecialchars($car['note'] ? "({$car['note']})" : "") ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
-                <!-- Start Date Time -->
+                <!-- Start Date -->
                 <div>
                     <label for="start_time" class="block text-xs font-semibold text-slate-400 mb-2">วันที่เริ่มเดินทาง <span class="text-rose-500">*</span></label>
                     <input id="start_time" name="start_time" type="date" required 
-                        value="<?= htmlspecialchars(!empty($formData['start_time']) ? date('Y-m-d', strtotime($formData['start_time'])) : '') ?>"
+                        value="<?= htmlspecialchars(date('Y-m-d', strtotime($booking['start_time']))) ?>"
                         class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
                 </div>
 
-                <!-- End Date Time -->
+                <!-- End Date -->
                 <div>
                     <label for="end_time" class="block text-xs font-semibold text-slate-400 mb-2">วันที่เดินทางกลับ <span class="text-rose-500">*</span></label>
                     <input id="end_time" name="end_time" type="date" required 
-                        value="<?= htmlspecialchars(!empty($formData['end_time']) ? date('Y-m-d', strtotime($formData['end_time'])) : '') ?>"
+                        value="<?= htmlspecialchars(date('Y-m-d', strtotime($booking['end_time']))) ?>"
                         class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
                 </div>
 
-                <!-- Searchable checklist of destination provinces (Module 3) -->
+                <!-- Searchable checklist of destination provinces -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-400 mb-2">ระบุจังหวัดปลายทาง (เดินทางข้ามจังหวัดสามารถเลือกได้หลายรายการ) <span class="text-rose-500">*</span></label>
                     
@@ -143,52 +138,34 @@
                 <!-- Purpose -->
                 <div class="md:col-span-2">
                     <label for="purpose" class="block text-xs font-semibold text-slate-400 mb-2">จุดประสงค์ภารกิจในการเดินทางไปราชการ <span class="text-rose-500">*</span></label>
-                    <textarea id="purpose" name="purpose" rows="3" required placeholder="ระบุภารกิจในการขอยืมยานพาหนะ เช่น เดินทางไปจัดสัมมนาฝึกอบรม ณ สำนักงานสาขา, ออกตรวจวัดคุณภาพน้ำเสียประจำปี..."
-                        class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"><?= htmlspecialchars($formData['purpose'] ?? '') ?></textarea>
+                    <textarea id="purpose" name="purpose" rows="3" required placeholder="ระบุภารกิจในการขอยืมยานพาหนะ..."
+                        class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"><?= htmlspecialchars($booking['purpose'] ?? '') ?></textarea>
                 </div>
 
-                <!-- Cancellation Password -->
+                <!-- Confirm Password -->
                 <div>
-                    <label for="cancellation_password" class="block text-xs font-semibold text-slate-400 mb-2">รหัสผ่านสำหรับยกเลิกการจอง (Cancellation Password) <span class="text-rose-500">*</span></label>
+                    <label for="cancellation_password" class="block text-xs font-semibold text-slate-400 mb-2">ป้อนรหัสผ่านการจองเพื่อยืนยันการแก้ไข <span class="text-rose-500">*</span></label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                            <i class="fa-solid fa-lock-open text-xs"></i>
+                            <i class="fa-solid fa-key text-xs"></i>
                         </div>
                         <input id="cancellation_password" name="cancellation_password" type="password" required 
-                            class="block w-full pl-9 pr-4 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 placeholder-slate-650 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition" 
-                            placeholder="ระบุรหัสผ่านเพื่อยกเลิกทีหลังได้ด้วยตัวเอง">
+                            class="block w-full pl-9 pr-4 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition" 
+                            placeholder="รหัสผ่านที่ป้อนตอนลงจอง">
                     </div>
-                    <p class="text-[10px] text-slate-500 font-light mt-1.5 leading-relaxed">รหัสผ่านนี้ใช้ในกรณีที่คุณต้องการคลิกที่อีเวนต์บนปฏิทินเพื่อลบรายการจองด้วยตัวเองโดยไม่จำต้องใช้ล็อกอิน</p>
                 </div>
 
             </div>
 
-            <!-- Agreement Checkboxes -->
-            <?php if (!empty($agreements)): ?>
-                <div class="space-y-3 pt-6 border-t border-slate-800/60">
-                    <label class="block text-xs font-semibold text-slate-400 mb-1">ข้อตกลงและเงื่อนไขการจองรถยนต์ส่วนกลาง <span class="text-rose-500">*</span></label>
-                    <div class="bg-slate-950/40 border border-slate-850 p-4 rounded-xl space-y-3">
-                        <?php foreach ($agreements as $a): ?>
-                            <label class="flex items-start space-x-3 text-xs text-slate-350 cursor-pointer select-none leading-relaxed hover:text-slate-200 transition">
-                                <input type="checkbox" value="<?= $a['id'] ?>" x-model="checkedAgreements" required
-                                    class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 transition mt-0.5">
-                                <span><?= htmlspecialchars($a['agreement_text']) ?></span>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <!-- Action buttons -->
-            <div class="pt-6 border-t border-slate-800 flex items-center justify-end gap-3">
-                <a href="/" class="px-6 py-2.5 border border-slate-850 hover:bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-semibold rounded-xl transition">
-                    ยกเลิก
+            <!-- Submit buttons -->
+            <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-800/40">
+                <a href="/" class="px-5 py-2.5 bg-slate-850 hover:bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-semibold rounded-xl transition">
+                    ยกเลิกและย้อนกลับ
                 </a>
-                <button type="submit" x-show="allAgreed" x-transition class="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-500/10 transition duration-300 transform hover:-translate-y-0.5">
-                    <i class="fa-solid fa-calendar-plus mr-1.5 text-xs"></i> ยืนยันการจองใช้งานรถ
+                <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs rounded-xl font-bold shadow-lg shadow-indigo-500/10 transition transform hover:-translate-y-0.5">
+                    บันทึกการแก้ไข
                 </button>
             </div>
-
         </form>
     </div>
 </div>

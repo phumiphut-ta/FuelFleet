@@ -18,6 +18,7 @@ TRUNCATE TABLE gas_receipt;
 TRUNCATE TABLE car_quota_history;
 TRUNCATE TABLE car_suspension;
 TRUNCATE TABLE car_booking_provinces;
+TRUNCATE TABLE booking_agreements;
 TRUNCATE TABLE car_booking;
 
 -- ------------------------------------------------------------

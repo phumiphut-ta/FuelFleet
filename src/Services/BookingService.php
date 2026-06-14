@@ -113,4 +113,57 @@ class BookingService {
             'message' => 'แก้ไขรายละเอียดการจองเรียบร้อยแล้ว'
         ];
     }
+
+    public function approveBooking(int $bookingId): array {
+        $booking = $this->bookingRepo->find($bookingId);
+        if (!$booking) {
+            return [
+                'success' => false,
+                'message' => 'ไม่พบข้อมูลการจองที่ต้องการอนุมัติ'
+            ];
+        }
+
+        if ($booking['status'] === 'Confirmed') {
+            return [
+                'success' => false,
+                'message' => 'การจองนี้ได้รับการอนุมัติไปก่อนหน้านี้แล้ว'
+            ];
+        }
+
+        if ($booking['status'] === 'Cancelled') {
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถอนุมัติการจองที่ถูกยกเลิกไปแล้วได้'
+            ];
+        }
+
+        $carId = (int)$booking['car_id'];
+        $startTime = $booking['start_time'];
+        $endTime = $booking['end_time'];
+
+        if ($this->suspensionRepo->isCarSuspended($carId, $startTime, $endTime)) {
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถอนุมัติได้ เนื่องจากรถคันนี้ถูกระงับการใช้งานชั่วคราวในช่วงเวลาดังกล่าว'
+            ];
+        }
+
+        $overlaps = $this->bookingRepo->getOverlappingBookings($carId, $startTime, $endTime, $bookingId);
+        if (!empty($overlaps)) {
+            $overlapList = [];
+            foreach ($overlaps as $overlap) {
+                $overlapList[] = $overlap['employee_name'] . ' (' . date('d/m/Y', strtotime($overlap['start_time'])) . ' - ' . date('d/m/Y', strtotime($overlap['end_time'])) . ')';
+            }
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถอนุมัติได้ เนื่องจากช่วงเวลาดังกล่าวทับซ้อนกับการจองที่ได้รับการอนุมัติอยู่แล้วโดย: ' . implode(', ', $overlapList)
+            ];
+        }
+
+        $this->bookingRepo->approve($bookingId);
+        return [
+            'success' => true,
+            'message' => 'อนุมัติการจองรถยนต์เรียบร้อยแล้ว'
+        ];
+    }
 }

@@ -6,6 +6,8 @@ interface BookingRepositoryInterface {
     public function find(int $id): ?array;
     public function create(array $data, array $provinces): int;
     public function cancel(int $id): bool;
+    public function cancelWithReason(int $id, string $reason): bool;
+    public function approve(int $id): bool;
     
     public function update(int $id, array $data, array $provinces): bool;
 

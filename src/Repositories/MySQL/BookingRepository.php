@@ -48,7 +48,7 @@ class BookingRepository implements BookingRepositoryInterface {
 
             $stmt = $this->db->prepare("
                 INSERT INTO car_booking (employee_id, car_id, booking_date, start_time, end_time, purpose, cancellation_password, status)
-                VALUES (:employee_id, :car_id, :booking_date, :start_time, :end_time, :purpose, :cancellation_password, 'Confirmed')
+                VALUES (:employee_id, :car_id, :booking_date, :start_time, :end_time, :purpose, :cancellation_password, 'Pending')
             ");
             $stmt->execute([
                 'employee_id' => $data['employee_id'],
@@ -79,6 +79,16 @@ class BookingRepository implements BookingRepositoryInterface {
 
     public function cancel(int $id): bool {
         $stmt = $this->db->prepare("UPDATE car_booking SET status = 'Cancelled' WHERE id = :id");
+        return $stmt->execute(['id' => $id]);
+    }
+
+    public function cancelWithReason(int $id, string $reason): bool {
+        $stmt = $this->db->prepare("UPDATE car_booking SET status = 'Cancelled', cancel_reason = :cancel_reason WHERE id = :id");
+        return $stmt->execute(['id' => $id, 'cancel_reason' => $reason]);
+    }
+
+    public function approve(int $id): bool {
+        $stmt = $this->db->prepare("UPDATE car_booking SET status = 'Confirmed' WHERE id = :id");
         return $stmt->execute(['id' => $id]);
     }
 
@@ -155,25 +165,35 @@ class BookingRepository implements BookingRepositoryInterface {
         $events = [];
 
         $stmtBookings = $this->db->query("
-            SELECT b.id, b.start_time, b.end_time, b.purpose, e.full_name AS booker_name, c.license_plate, c.color AS car_color
+            SELECT b.id, b.start_time, b.end_time, b.purpose, b.status, b.cancel_reason, e.full_name AS booker_name, c.license_plate, c.color AS car_color
             FROM car_booking b
             LEFT JOIN employee e ON b.employee_id = e.id
             LEFT JOIN car_detail c ON b.car_id = c.id
-            WHERE b.status = 'Confirmed'
+            WHERE b.status IN ('Confirmed', 'Pending')
         ");
         foreach ($stmtBookings->fetchAll() as $row) {
+            $isPending = $row['status'] === 'Pending';
+            $titlePrefix = $isPending ? '⏳ [รออนุมัติ] ' : '🚗 ';
+            $color = !empty($row['car_color']) ? $row['car_color'] : '#6366f1';
+            
+            if ($isPending) {
+                $color = '#d97706'; // Amber color for pending approval
+            }
+
             $events[] = [
                 'id'         => 'booking_' . $row['id'],
                 'booking_id' => $row['id'],
-                'title'      => '🚗 ' . $row['license_plate'] . ' - ' . $row['booker_name'],
+                'title'      => $titlePrefix . $row['license_plate'] . ' - ' . $row['booker_name'],
                 'start'      => $row['start_time'],
                 'end'        => $row['end_time'],
-                'color'      => !empty($row['car_color']) ? $row['car_color'] : '#6366f1',
+                'color'      => $color,
                 'extendedProps' => [
-                    'type'    => 'booking',
-                    'booker'  => $row['booker_name'],
-                    'vehicle' => $row['license_plate'],
-                    'purpose' => $row['purpose'],
+                    'type'          => 'booking',
+                    'booker'        => $row['booker_name'],
+                    'vehicle'       => $row['license_plate'],
+                    'purpose'       => $row['purpose'],
+                    'status'        => $row['status'],
+                    'cancel_reason' => $row['cancel_reason'] ?? ''
                 ],
             ];
 

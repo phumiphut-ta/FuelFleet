@@ -320,4 +320,166 @@ class BookingServiceTest extends TestCase {
         $this->assertFalse($result['success']);
         $this->assertStringContainsString('ทับซ้อนกับการจองที่มีอยู่แล้ว', $result['message']);
     }
+
+    public function testApproveBookingSuccess() {
+        $bookingRepo = $this->createMock(BookingRepositoryInterface::class);
+        $suspensionRepo = $this->createMock(SuspensionRepositoryInterface::class);
+
+        $bookingRepo->expects($this->once())
+            ->method('find')
+            ->with(10)
+            ->willReturn([
+                'id' => 10,
+                'car_id' => 1,
+                'status' => 'Pending',
+                'start_time' => '2026-06-01 00:00:00',
+                'end_time' => '2026-06-01 23:59:59'
+            ]);
+
+        $suspensionRepo->expects($this->once())
+            ->method('isCarSuspended')
+            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59')
+            ->willReturn(false);
+
+        $bookingRepo->expects($this->once())
+            ->method('getOverlappingBookings')
+            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59', 10)
+            ->willReturn([]);
+
+        $bookingRepo->expects($this->once())
+            ->method('approve')
+            ->with(10)
+            ->willReturn(true);
+
+        $service = new BookingService($bookingRepo, $suspensionRepo);
+        $result = $service->approveBooking(10);
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals('อนุมัติการจองรถยนต์เรียบร้อยแล้ว', $result['message']);
+    }
+
+    public function testApproveBookingFailsWhenSuspended() {
+        $bookingRepo = $this->createMock(BookingRepositoryInterface::class);
+        $suspensionRepo = $this->createMock(SuspensionRepositoryInterface::class);
+
+        $bookingRepo->expects($this->once())
+            ->method('find')
+            ->with(10)
+            ->willReturn([
+                'id' => 10,
+                'car_id' => 1,
+                'status' => 'Pending',
+                'start_time' => '2026-06-01 00:00:00',
+                'end_time' => '2026-06-01 23:59:59'
+            ]);
+
+        $suspensionRepo->expects($this->once())
+            ->method('isCarSuspended')
+            ->willReturn(true);
+
+        $bookingRepo->expects($this->never())
+            ->method('getOverlappingBookings');
+
+        $bookingRepo->expects($this->never())
+            ->method('approve');
+
+        $service = new BookingService($bookingRepo, $suspensionRepo);
+        $result = $service->approveBooking(10);
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('ถูกระงับการใช้งานชั่วคราว', $result['message']);
+    }
+
+    public function testApproveBookingFailsOnOverlaps() {
+        $bookingRepo = $this->createMock(BookingRepositoryInterface::class);
+        $suspensionRepo = $this->createMock(SuspensionRepositoryInterface::class);
+
+        $bookingRepo->expects($this->once())
+            ->method('find')
+            ->with(10)
+            ->willReturn([
+                'id' => 10,
+                'car_id' => 1,
+                'status' => 'Pending',
+                'start_time' => '2026-06-01 00:00:00',
+                'end_time' => '2026-06-01 23:59:59'
+            ]);
+
+        $suspensionRepo->expects($this->once())
+            ->method('isCarSuspended')
+            ->willReturn(false);
+
+        $bookingRepo->expects($this->once())
+            ->method('getOverlappingBookings')
+            ->willReturn([
+                [
+                    'employee_name' => 'Jane Smith',
+                    'start_time' => '2026-06-01 00:00:00',
+                    'end_time' => '2026-06-01 23:59:59'
+                ]
+            ]);
+
+        $bookingRepo->expects($this->never())
+            ->method('approve');
+
+        $service = new BookingService($bookingRepo, $suspensionRepo);
+        $result = $service->approveBooking(10);
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('ทับซ้อนกับการจองที่ได้รับการอนุมัติอยู่แล้ว', $result['message']);
+    }
+
+    public function testApproveBookingNotFound() {
+        $bookingRepo = $this->createMock(BookingRepositoryInterface::class);
+        $suspensionRepo = $this->createMock(SuspensionRepositoryInterface::class);
+
+        $bookingRepo->expects($this->once())
+            ->method('find')
+            ->with(10)
+            ->willReturn(null);
+
+        $service = new BookingService($bookingRepo, $suspensionRepo);
+        $result = $service->approveBooking(10);
+
+        $this->assertFalse($result['success']);
+        $this->assertEquals('ไม่พบข้อมูลการจองที่ต้องการอนุมัติ', $result['message']);
+    }
+
+    public function testApproveBookingAlreadyConfirmed() {
+        $bookingRepo = $this->createMock(BookingRepositoryInterface::class);
+        $suspensionRepo = $this->createMock(SuspensionRepositoryInterface::class);
+
+        $bookingRepo->expects($this->once())
+            ->method('find')
+            ->with(10)
+            ->willReturn([
+                'id' => 10,
+                'status' => 'Confirmed'
+            ]);
+
+        $service = new BookingService($bookingRepo, $suspensionRepo);
+        $result = $service->approveBooking(10);
+
+        $this->assertFalse($result['success']);
+        $this->assertEquals('การจองนี้ได้รับการอนุมัติไปก่อนหน้านี้แล้ว', $result['message']);
+    }
+
+    public function testApproveBookingAlreadyCancelled() {
+        $bookingRepo = $this->createMock(BookingRepositoryInterface::class);
+        $suspensionRepo = $this->createMock(SuspensionRepositoryInterface::class);
+
+        $bookingRepo->expects($this->once())
+            ->method('find')
+            ->with(10)
+            ->willReturn([
+                'id' => 10,
+                'status' => 'Cancelled'
+            ]);
+
+        $service = new BookingService($bookingRepo, $suspensionRepo);
+        $result = $service->approveBooking(10);
+
+        $this->assertFalse($result['success']);
+        $this->assertEquals('ไม่สามารถอนุมัติการจองที่ถูกยกเลิกไปแล้วได้', $result['message']);
+    }
 }

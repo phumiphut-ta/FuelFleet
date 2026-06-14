@@ -110,7 +110,8 @@ CREATE TABLE car_booking (
     end_time DATETIME NOT NULL,
     purpose TEXT NOT NULL,
     cancellation_password VARCHAR(255) NOT NULL,
-    status VARCHAR(50) DEFAULT 'Confirmed', -- Confirmed, Cancelled
+    status VARCHAR(50) DEFAULT 'Pending', -- Pending, Confirmed, Cancelled
+    cancel_reason TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (employee_id) REFERENCES employee (id) ON UPDATE CASCADE,
@@ -273,4 +274,16 @@ INSERT INTO car_quota_history (car_id, monthly_quota, effective_month) VALUES
 INSERT INTO system_settings (setting_key, setting_value, description) VALUES
 ('pdf_report_footer', 'รายงานนี้สร้างและพิมพ์โดยระบบควบคุมโควต้าน้ำมันยานพาหนะอัตโนมัติ <strong>FuelFleet™</strong><br>พิมพ์ใบเสร็จและภาพแนบย้อนหลังถูกต้องตามข้อบังคับระเบียบราชการองค์กร', 'ข้อความท้ายกระดาษของรายงาน PDF ทุกฉบับ'),
 ('footer_copyright', '© 2026 FuelFleet™. ระบบบริหารรถส่วนราชการ. สงวนลิขสิทธิ์ทั้งหมด.', 'ข้อความลิขสิทธิ์ที่แสดงด้านล่างเว็บไซต์');
+
+-- 18. booking_agreements
+CREATE TABLE booking_agreements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    agreement_text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO booking_agreements (agreement_text) VALUES 
+('ผู้ขอใช้รถจะต้องดูแลความสะอาดและรักษาทรัพย์สินของทางราชการตลอดการเดินทาง'),
+('ผู้ขอใช้รถจะต้องส่งคืนกุญแจรถพร้อมบันทึกเลขไมล์และแนบใบเสร็จน้ำมันทันทีหลังเสร็จสิ้นภารกิจ'),
+('หากเกิดอุบัติเหตุหรือรถยนต์ขัดข้องในระหว่างเดินทาง ต้องรายงานผู้บริหารและประสานงานฝ่ายกองกลางทันที');
 

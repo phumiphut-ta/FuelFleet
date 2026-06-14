@@ -1,7 +1,7 @@
 <div class="space-y-6" x-data="{ 
     modalOpen: false, 
     cancelFormOpen: false,
-    eventDetails: { id: '', title: '', type: '', start: '', end: '', booker: '', vehicle: '', purpose: '', reason: '' },
+    eventDetails: { id: '', title: '', type: '', start: '', end: '', booker: '', vehicle: '', purpose: '', reason: '', status: '', cancelReason: '' },
     openEvent(info) {
         const props = info.event.extendedProps;
         this.eventDetails.id = props.booking_id || props.suspension_id || '';
@@ -11,6 +11,8 @@
         this.eventDetails.vehicle = props.vehicle;
         this.eventDetails.purpose = props.purpose || '-';
         this.eventDetails.reason = props.reason || '-';
+        this.eventDetails.status = props.status || '';
+        this.eventDetails.cancelReason = props.cancel_reason || '';
         this.eventDetails.start = info.event.start.toLocaleString('th-TH');
         this.eventDetails.end = info.event.end ? info.event.end.toLocaleString('th-TH') : '-';
         
@@ -49,7 +51,8 @@
     <div class="glass-panel p-6 rounded-2xl border border-slate-850 bg-slate-900/10">
         <!-- Legend indicators -->
         <div class="flex items-center space-x-4 text-xs font-light text-slate-400 mb-6 border-b border-slate-800/80 pb-4">
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#6366f1] inline-block"></span> การจองของพนักงาน</span>
+            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#6366f1] inline-block"></span> อนุมัติการจองแล้ว</span>
+            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#d97706] inline-block"></span> รออนุมัติการจอง</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#f43f5e] inline-block"></span> รถยนต์ปิดปรับปรุง (Suspension)</span>
         </div>
 
@@ -79,6 +82,17 @@
                 <!-- If Booking -->
                 <template x-if="eventDetails.type === 'booking'">
                     <div class="space-y-3">
+                        <div>
+                            <span class="text-slate-500 font-medium block">สถานะการจอง (Status):</span>
+                            <span :class="eventDetails.status === 'Confirmed' ? 'text-emerald-400 font-semibold' : 'text-amber-500 font-semibold'"
+                                x-text="eventDetails.status === 'Confirmed' ? 'อนุมัติการจองแล้ว' : 'รออนุมัติการจอง'"></span>
+                        </div>
+                        <template x-if="eventDetails.cancelReason">
+                            <div>
+                                <span class="text-rose-400 font-medium block">เหตุผลการยกเลิก (Cancel Reason):</span>
+                                <span x-text="eventDetails.cancelReason" class="text-rose-300 font-light"></span>
+                            </div>
+                        </template>
                         <div>
                             <span class="text-slate-500 font-medium block">ผู้จองใช้งาน (Booker):</span>
                             <span x-text="eventDetails.booker" class="text-slate-200"></span>
@@ -112,9 +126,12 @@
             <!-- Cancel booking workflow -->
             <template x-if="eventDetails.type === 'booking'">
                 <div>
-                    <div x-show="!cancelFormOpen">
-                        <button @click="cancelFormOpen = true" class="w-full py-2.5 bg-rose-950/40 border border-rose-900/50 hover:bg-rose-500 hover:text-white text-rose-400 text-xs font-semibold rounded-xl transition duration-200">
-                            <i class="fa-solid fa-trash-can mr-1"></i> ขอยกเลิกรายการจองนี้
+                    <div x-show="!cancelFormOpen" class="flex gap-2">
+                        <a :href="'/booking/edit/' + eventDetails.id" class="flex-grow py-2.5 bg-indigo-950/40 border border-indigo-900/50 hover:bg-indigo-600 hover:text-white text-indigo-400 text-center text-xs font-semibold rounded-xl transition duration-200">
+                            <i class="fa-solid fa-pen-to-square mr-1"></i> แก้ไขการจอง
+                        </a>
+                        <button @click="cancelFormOpen = true" class="flex-grow py-2.5 bg-rose-950/40 border border-rose-900/50 hover:bg-rose-500 hover:text-white text-rose-400 text-xs font-semibold rounded-xl transition duration-200">
+                            <i class="fa-solid fa-trash-can mr-1"></i> ยกเลิกการจอง
                         </button>
                     </div>
 
