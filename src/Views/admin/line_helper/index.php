@@ -140,6 +140,10 @@
                             <div><strong class="text-indigo-400">{date}</strong> = วันที่ปัจจุบันภาษาไทย (เช่น 23 พ.ค. 2568)</div>
                             <div><strong class="text-indigo-400">{month_year}</strong> = เดือนปีงบปัจจุบัน (เช่น พฤษภาคม 2568)</div>
                             <div><strong class="text-indigo-400">{vehicle_list}</strong> = แสดงรายการรถยนต์ที่น้ำมันคงเหลือน้อยกว่าเกณฑ์แจ้งเตือน</div>
+                            <div class="border-t border-slate-850/80 pt-1.5 mt-1.5 text-[9px] text-slate-500 font-sans">ระบุสถิติเจาะจงรายคัน (แทนคำว่า ทะเบียนรถ ด้วยทะเบียนจริง เช่น กข-1234):</div>
+                            <div><strong class="text-indigo-400">{used:ทะเบียนรถ}</strong> = ใช้ไป (เช่น {used:กข-1234})</div>
+                            <div><strong class="text-indigo-400">{quota:ทะเบียนรถ}</strong> = โควต้าทั้งหมด (เช่น {quota:กข-1234})</div>
+                            <div><strong class="text-indigo-400">{remaining:ทะเบียนรถ}</strong> = คงเหลือ (เช่น {remaining:กข-1234})</div>
                         </div>
                     </div>
 

@@ -97,6 +97,20 @@ class LineHelperController {
             $template
         );
 
+        // Interpolate vehicle-specific placeholders: {used:PLATE}, {quota:PLATE}, {remaining:PLATE}
+        foreach ($carsData as $car) {
+            $plate = $car['license_plate'];
+            $usedVal = (float)$car['used_liters'];
+            $quotaVal = (float)$car['quota_liters'];
+            $remainingVal = (float)($car['quota_liters'] - $car['used_liters']);
+
+            $interpolatedMessage = str_replace(
+                ["{used:$plate}", "{quota:$plate}", "{remaining:$plate}"],
+                [$usedVal, $quotaVal, $remainingVal],
+                $interpolatedMessage
+            );
+        }
+
         $success = $_SESSION['line_helper_success'] ?? null;
         $error = $_SESSION['line_helper_error'] ?? null;
         unset($_SESSION['line_helper_success'], $_SESSION['line_helper_error']);
