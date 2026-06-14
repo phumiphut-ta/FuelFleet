@@ -50,10 +50,18 @@
     <!-- Calendar View -->
     <div class="glass-panel p-6 rounded-2xl border border-slate-850 bg-slate-900/10">
         <!-- Legend indicators -->
-        <div class="flex items-center space-x-4 text-xs font-light text-slate-400 mb-6 border-b border-slate-800/80 pb-4">
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#6366f1] inline-block"></span> อนุมัติการจองแล้ว</span>
+        <div class="flex flex-wrap items-center gap-y-2.5 gap-x-4 text-xs font-light text-slate-400 mb-6 border-b border-slate-800/80 pb-4">
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#d97706] inline-block"></span> รออนุมัติการจอง</span>
             <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#f43f5e] inline-block"></span> รถยนต์ปิดปรับปรุง (Suspension)</span>
+            <?php foreach (($cars ?? []) as $car): ?>
+                <?php 
+                    $carColor = !empty($car['color']) ? $car['color'] : '#6366f1';
+                ?>
+                <span class="flex items-center gap-1.5">
+                    <span class="h-3 w-3 rounded inline-block" style="background-color: <?= htmlspecialchars($carColor) ?>;"></span>
+                    <?= htmlspecialchars($car['license_plate']) ?> (อนุมัติแล้ว)
+                </span>
+            <?php endforeach; ?>
         </div>
 
         <!-- Target element for FullCalendar -->

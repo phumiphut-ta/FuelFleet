@@ -20,10 +20,14 @@ class CalendarController {
         $error = $_SESSION['booking_error'] ?? null;
         unset($_SESSION['booking_success'], $_SESSION['booking_error']);
 
+        $db = Database::getConnection();
+        $cars = $db->query("SELECT license_plate, color, status FROM car_detail ORDER BY license_plate ASC")->fetchAll();
+
         $router = new Router($request, $response);
         return $router->renderView('public/calendar', [
             'success' => $success,
-            'error' => $error
+            'error' => $error,
+            'cars' => $cars
         ]);
     }
 
