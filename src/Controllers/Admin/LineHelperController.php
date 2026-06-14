@@ -131,7 +131,7 @@ class LineHelperController {
 
     public function save(Request $request, Response $response) {
         $body = $request->getBody();
-        $templateText = trim($body['template_text'] ?? '');
+        $templateText = isset($_POST['template_text']) ? trim($_POST['template_text']) : '';
         $thresholds = $body['thresholds'] ?? [];
 
         try {
