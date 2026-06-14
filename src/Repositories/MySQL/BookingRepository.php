@@ -172,6 +172,7 @@ class BookingRepository implements BookingRepositoryInterface {
 
     public function getCalendarEvents(): array {
         $events = [];
+        $thaiShortMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
         $stmtBookings = $this->db->query("
             SELECT b.id, b.start_time, b.end_time, b.purpose, b.status, b.cancel_reason, e.full_name AS booker_name, c.license_plate, c.color AS car_color
@@ -189,12 +190,29 @@ class BookingRepository implements BookingRepositoryInterface {
                 $color = '#d97706'; // Amber color for pending approval
             }
 
+            $startDate = date('Y-m-d', strtotime($row['start_time']));
+            $endDate = date('Y-m-d', strtotime($row['end_time'] . ' +1 day'));
+
+            $startTs = strtotime($row['start_time']);
+            $endTs = strtotime($row['end_time']);
+            
+            $startDay = (int)date('d', $startTs);
+            $startMonthIndex = (int)date('n', $startTs);
+            $startYear = (int)date('Y', $startTs) + 543;
+            $startDisplay = $startDay . ' ' . $thaiShortMonths[$startMonthIndex] . ' ' . $startYear;
+            
+            $endDay = (int)date('d', $endTs);
+            $endMonthIndex = (int)date('n', $endTs);
+            $endYear = (int)date('Y', $endTs) + 543;
+            $endDisplay = $endDay . ' ' . $thaiShortMonths[$endMonthIndex] . ' ' . $endYear;
+
             $events[] = [
                 'id'         => 'booking_' . $row['id'],
                 'booking_id' => $row['id'],
                 'title'      => $titlePrefix . $row['license_plate'] . ' - ' . $row['booker_name'],
-                'start'      => $row['start_time'],
-                'end'        => $row['end_time'],
+                'start'      => $startDate,
+                'end'        => $endDate,
+                'allDay'     => true,
                 'color'      => $color,
                 'extendedProps' => [
                     'type'          => 'booking',
@@ -202,7 +220,9 @@ class BookingRepository implements BookingRepositoryInterface {
                     'vehicle'       => $row['license_plate'],
                     'purpose'       => $row['purpose'],
                     'status'        => $row['status'],
-                    'cancel_reason' => $row['cancel_reason'] ?? ''
+                    'cancel_reason' => $row['cancel_reason'] ?? '',
+                    'start_display' => $startDisplay,
+                    'end_display'   => $endDisplay
                 ],
             ];
 
@@ -216,6 +236,20 @@ class BookingRepository implements BookingRepositoryInterface {
         ");
         foreach ($stmtSuspensions->fetchAll() as $row) {
             $endDate = date('Y-m-d', strtotime($row['end_date'] . ' +1 day'));
+
+            $startTs = strtotime($row['start_date']);
+            $endTs = strtotime($row['end_date']);
+            
+            $startDay = (int)date('d', $startTs);
+            $startMonthIndex = (int)date('n', $startTs);
+            $startYear = (int)date('Y', $startTs) + 543;
+            $startDisplay = $startDay . ' ' . $thaiShortMonths[$startMonthIndex] . ' ' . $startYear;
+            
+            $endDay = (int)date('d', $endTs);
+            $endMonthIndex = (int)date('n', $endTs);
+            $endYear = (int)date('Y', $endTs) + 543;
+            $endDisplay = $endDay . ' ' . $thaiShortMonths[$endMonthIndex] . ' ' . $endYear;
+
             $events[] = [
                 'id' => 'suspension_' . $row['id'],
                 'type' => 'suspension',
@@ -228,7 +262,9 @@ class BookingRepository implements BookingRepositoryInterface {
                 'extendedProps' => [
                     'vehicle' => $row['license_plate'],
                     'reason' => $row['reason'],
-                    'type' => 'ระงับการใช้งานชั่วคราว'
+                    'type' => 'ระงับการใช้งานชั่วคราว',
+                    'start_display' => $startDisplay,
+                    'end_display'   => $endDisplay
                 ]
             ];
         }

@@ -13,8 +13,8 @@
         this.eventDetails.reason = props.reason || '-';
         this.eventDetails.status = props.status || '';
         this.eventDetails.cancelReason = props.cancel_reason || '';
-        this.eventDetails.start = info.event.start.toLocaleString('th-TH');
-        this.eventDetails.end = info.event.end ? info.event.end.toLocaleString('th-TH') : '-';
+        this.eventDetails.start = props.start_display || info.event.start.toLocaleDateString('th-TH');
+        this.eventDetails.end = props.end_display || '-';
         
         this.cancelFormOpen = false;
         this.modalOpen = true;
@@ -111,7 +111,7 @@
                         </div>
                         <div>
                             <span class="text-slate-500 font-medium block">เวลาเดินทาง (Period):</span>
-                            <span class="text-slate-200 font-semibold" x-text="eventDetails.start + ' น. - ' + eventDetails.end + ' น.'"></span>
+                            <span class="text-slate-200 font-semibold" x-text="eventDetails.start === eventDetails.end ? eventDetails.start : eventDetails.start + ' ถึง ' + eventDetails.end"></span>
                         </div>
                     </div>
                 </template>
@@ -125,7 +125,7 @@
                         </div>
                         <div>
                             <span class="text-slate-500 font-medium block">ระยะเวลาสั่งแบน (Period):</span>
-                            <span class="text-slate-200 font-semibold" x-text="eventDetails.start + ' - ' + eventDetails.end"></span>
+                            <span class="text-slate-200 font-semibold" x-text="eventDetails.start === eventDetails.end ? eventDetails.start : eventDetails.start + ' ถึง ' + eventDetails.end"></span>
                         </div>
                     </div>
                 </template>
