@@ -74,7 +74,7 @@ class ReportController {
         }
 
         $format = 'A4';
-        if ($reportType === 2 || $reportType === 9) {
+        if ($reportType === 2 || $reportType === 9 || $reportType === 10) {
             $format = 'A4-L';
         }
 
@@ -1027,6 +1027,151 @@ class ReportController {
                                 <td class="text-center" style="font-size: 10px;">' . date('d/m/Y H:i', strtotime($row['cancelled_at'])) . '</td>
                                 <td style="font-size: 11px;">' . $canceller . '</td>
                                 <td style="font-size: 11px; color: #475569;">' . htmlspecialchars($displayReason) . '</td>
+                            </tr>';
+                    }
+
+                    $content .= '
+                            </tbody>
+                        </table>';
+                }
+                break;
+
+            case 10: // Monthly Vehicle Booking Report
+                $title = "รายงานการจองรถยนต์ประจำเดือน";
+                
+                // Set Thai months
+                $thaiFullMonths = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                $thaiMonthName = $thaiFullMonths[(int)$month] ?? $month;
+                $thaiYear = (int)$year + 543;
+
+                // Validate parameters
+                $carIdParam = $body['car_id'] ?? 'all';
+                $isAllVehicles = ($carIdParam === 'all' || empty($carIdParam));
+
+                $carInfoText = "";
+                if (!$isAllVehicles) {
+                    $carId = (int)$carIdParam;
+                    $carStmt = $db->prepare("SELECT * FROM car_detail WHERE id = :id");
+                    $carStmt->execute(['id' => $carId]);
+                    $carDetail = $carStmt->fetch();
+                    if (!$carDetail) {
+                        $_SESSION['report_error'] = 'ไม่พบข้อมูลรถยนต์ที่เลือก';
+                        $response->redirect('/admin/reports');
+                        if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                            exit;
+                        }
+                        return;
+                    }
+                    $carInfoText = "ประจำทะเบียนรถ " . htmlspecialchars($carDetail['license_plate']);
+                } else {
+                    $carInfoText = "รถยนต์หลวงทุกคัน";
+                }
+
+                // Query bookings
+                $sql = "
+                    SELECT 
+                        b.id AS booking_id,
+                        b.booking_date,
+                        b.start_time,
+                        b.end_time,
+                        b.purpose,
+                        b.created_at,
+                        b.status,
+                        c.license_plate,
+                        c.color AS car_color,
+                        e.full_name AS employee_name,
+                        d.name AS department_name,
+                        divi.name AS division_name
+                    FROM car_booking b
+                    INNER JOIN car_detail c ON b.car_id = c.id
+                    LEFT JOIN employee e ON b.employee_id = e.id
+                    LEFT JOIN department d ON e.department_id = d.id
+                    LEFT JOIN division divi ON e.division_id = divi.id
+                    WHERE MONTH(b.start_time) = :month 
+                      AND YEAR(b.start_time) = :year
+                      AND b.status != 'Cancelled'
+                ";
+                
+                if (!$isAllVehicles) {
+                    $sql .= " AND b.car_id = :car_id";
+                }
+                
+                $sql .= " ORDER BY b.created_at ASC";
+                
+                $stmt = $db->prepare($sql);
+                $params = [
+                    'month' => $month,
+                    'year' => $year
+                ];
+                if (!$isAllVehicles) {
+                    $params['car_id'] = $carId;
+                }
+                $stmt->execute($params);
+                $bookings = $stmt->fetchAll();
+
+                // Fetch provinces for each booking
+                foreach ($bookings as &$b) {
+                    $pStmt = $db->prepare("SELECT province_name FROM car_booking_provinces WHERE booking_id = :booking_id ORDER BY province_name ASC");
+                    $pStmt->execute(['booking_id' => $b['booking_id']]);
+                    $b['provinces'] = $pStmt->fetchAll(\PDO::FETCH_COLUMN);
+                }
+
+                $content = '
+                    <h1>' . $title . '</h1>
+                    <div class="subtitle">' . $carInfoText . ' &bull; ประจำเดือน ' . $thaiMonthName . ' พ.ศ. ' . $thaiYear . '</div>
+                    <table class="meta-table">
+                        <tr>
+                            <td>พิมพ์โดย: ' . htmlspecialchars($printedBy) . '</td>
+                            <td class="text-right">พิมพ์เมื่อ: ' . $printDate . '</td>
+                        </tr>
+                    </table>';
+
+                if (empty($bookings)) {
+                    $content .= '<p class="text-center" style="padding: 40px 0; color: #777;">ไม่พบข้อมูลประวัติการจองใช้งานรถยนต์ในช่วงเวลาดังกล่าว</p>';
+                } else {
+                    $content .= '
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%; text-align: center;">ลำดับ</th>
+                                    <th style="width: 15%; text-align: center;">วันที่จอง</th>
+                                    <th style="width: 12%; text-align: center;">ทะเบียนรถ</th>
+                                    <th style="width: 18%;">ชื่อผู้จองรถ / สังกัด</th>
+                                    <th style="width: 18%; text-align: center;">ช่วงวันที่จองรถ</th>
+                                    <th style="width: 14%; text-align: center;">จังหวัดปลายทาง</th>
+                                    <th style="width: 18%;">วัตถุประสงค์เดินทาง</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+
+                    $rank = 1;
+                    foreach ($bookings as $row) {
+                        $deptInfo = [];
+                        if ($row['department_name']) {
+                            $deptInfo[] = $row['department_name'];
+                        }
+                        if ($row['division_name']) {
+                            $deptInfo[] = $row['division_name'];
+                        }
+                        $deptText = !empty($deptInfo) ? ' (' . implode(', ', $deptInfo) . ')' : '';
+                        
+                        $provinceText = !empty($row['provinces']) ? implode(', ', $row['provinces']) : '-';
+
+                        // Display formatted booking creation date/time
+                        $createdDateText = date('d/m/Y H:i', strtotime($row['created_at'])) . ' น.';
+
+                        // Display formatted travel period
+                        $travelPeriod = date('d/m/Y H:i', strtotime($row['start_time'])) . '<br>ถึง ' . date('d/m/Y H:i', strtotime($row['end_time']));
+
+                        $content .= '
+                            <tr>
+                                <td class="text-center">' . $rank++ . '</td>
+                                <td class="text-center" style="font-size: 11px;">' . htmlspecialchars($createdDateText) . '</td>
+                                <td class="text-center" style="font-weight: bold;">' . htmlspecialchars($row['license_plate']) . '</td>
+                                <td style="font-size: 11px;">' . htmlspecialchars($row['employee_name']) . '<br><span style="color: #64748b; font-size: 10px;">' . htmlspecialchars($deptText) . '</span></td>
+                                <td class="text-center" style="font-size: 10px;">' . $travelPeriod . '</td>
+                                <td class="text-center" style="font-size: 11px;">' . htmlspecialchars($provinceText) . '</td>
+                                <td style="font-size: 11px;">' . htmlspecialchars($row['purpose']) . '</td>
                             </tr>';
                     }
 

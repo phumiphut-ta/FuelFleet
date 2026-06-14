@@ -101,6 +101,13 @@
                     <span class="h-6 w-6 rounded-lg bg-indigo-500/10 flex items-center justify-center font-bold text-[10px]">9</span>
                     <span>รายงานการยกเลิกการจองใช้งานรถ</span>
                 </button>
+
+                <!-- R10 -->
+                <button type="button" @click="reportType = 10" :class="reportType === 10 ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300' : 'bg-slate-900/40 border-slate-850 text-slate-400 hover:text-white hover:border-slate-800'"
+                    class="w-full text-left p-3 border rounded-xl font-semibold flex items-center gap-2 transition duration-150">
+                    <span class="h-6 w-6 rounded-lg bg-indigo-500/10 flex items-center justify-center font-bold text-[10px]">10</span>
+                    <span>รายงานการจองรถยนต์ประจำเดือน</span>
+                </button>
             </div>
         </div>
 
@@ -116,8 +123,8 @@
                     <input type="hidden" name="report_type" :value="reportType">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Month Filter (Visible for R1 & R6) -->
-                        <div x-show="reportType === 1 || reportType === 6" x-transition>
+                        <!-- Month Filter (Visible for R1, R6 & R10) -->
+                        <div x-show="reportType === 1 || reportType === 6 || reportType === 10" x-transition>
                             <label for="month" class="block text-xs font-semibold text-slate-400 mb-2">เลือกเดือนคัดกรอง</label>
                             <select id="month" name="month" 
                                 class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition">
@@ -136,8 +143,8 @@
                             </select>
                         </div>
 
-                        <!-- Year Filter (Visible for R1, R2, R3, R6, R7) -->
-                        <div x-show="reportType === 1 || reportType === 2 || reportType === 3 || reportType === 6 || reportType === 7" x-transition>
+                        <!-- Year Filter (Visible for R1, R2, R3, R6, R7, R10) -->
+                        <div x-show="reportType === 1 || reportType === 2 || reportType === 3 || reportType === 6 || reportType === 7 || reportType === 10" x-transition>
                             <label for="year" class="block text-xs font-semibold text-slate-400 mb-2">
                                 <span x-text="(reportType === 3 || reportType === 7) ? 'เลือกปีงบประมาณ ค.ศ. คัดกรอง' : 'เลือกปี ค.ศ. คัดกรอง'"></span>
                             </label>
@@ -152,12 +159,16 @@
                             </select>
                         </div>
 
-                        <!-- Vehicle Filter (Visible only for R6) -->
-                        <div class="md:col-span-2" x-show="reportType === 6" x-transition>
-                            <label for="car_id" class="block text-xs font-semibold text-slate-400 mb-2">เลือกทะเบียนรถยนต์หลวงที่จะเปิดรายงานใบเสร็จค่าน้ำมันประจำเดือนจำแนกรายคัน <span class="text-rose-500">*</span></label>
+                        <!-- Vehicle Filter (Visible for R6 & R10) -->
+                        <div class="md:col-span-2" x-show="reportType === 6 || reportType === 10" x-transition>
+                            <label for="car_id" class="block text-xs font-semibold text-slate-400 mb-2">
+                                <span x-text="reportType === 6 ? 'เลือกทะเบียนรถยนต์หลวงที่จะเปิดรายงานใบเสร็จค่าน้ำมันประจำเดือนจำแนกรายคัน' : 'เลือกทะเบียนรถยนต์หลวงที่ต้องการดูรายงานการจอง'"></span>
+                                <span class="text-rose-500">*</span>
+                            </label>
                             <select id="car_id" name="car_id" 
                                 class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition">
-                                <option value="" disabled selected>-- เลือกทะเบียนรถยนต์ --</option>
+                                <option value="all" x-show="reportType === 10" :selected="reportType === 10">-- แสดงข้อมูลรถยนต์ทุกคัน (All Vehicles) --</option>
+                                <option value="" disabled x-show="reportType === 6" :selected="reportType === 6">-- เลือกทะเบียนรถยนต์ --</option>
                                 <?php foreach ($cars as $car): ?>
                                     <option value="<?= $car['id'] ?>"><?= htmlspecialchars($car['license_plate']) ?> (<?= htmlspecialchars($car['fuel_type']) ?>)</option>
                                 <?php endforeach; ?>
