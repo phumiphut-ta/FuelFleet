@@ -40,7 +40,7 @@ class CalendarController {
         $db = Database::getConnection();
 
         // 1. Determine min and max booking date to build fiscal years list
-        $minMax = $db->query("SELECT MIN(booking_date) AS min_date, MAX(booking_date) AS max_date FROM car_booking")->fetch();
+        $minMax = $db->query("SELECT MIN(start_time) AS min_date, MAX(start_time) AS max_date FROM car_booking")->fetch();
         $currentYear = (int)date('Y');
         $currentMonth = (int)date('m');
         $latestFiscalYear = $currentMonth >= 10 ? $currentYear + 1 : $currentYear;
@@ -66,8 +66,8 @@ class CalendarController {
         $selectedFY = isset($queryParams['fy']) ? (int)$queryParams['fy'] : $latestFiscalYear;
 
         // Calculate date range for the selected fiscal year (Oct 1 of FY-1 to Sep 30 of FY)
-        $startDate = ($selectedFY - 1) . "-10-01";
-        $endDate = $selectedFY . "-09-30";
+        $startDate = ($selectedFY - 1) . "-10-01 00:00:00";
+        $endDate = $selectedFY . "-09-30 23:59:59";
 
         // 3. Query stats for provinces
         $stmtProvinces = $db->prepare("
@@ -75,8 +75,8 @@ class CalendarController {
             FROM car_booking_provinces p
             LEFT JOIN car_booking b ON p.booking_id = b.id
             WHERE b.status = 'Confirmed' 
-              AND b.booking_date >= :start_date 
-              AND b.booking_date <= :end_date
+              AND b.start_time >= :start_date 
+              AND b.start_time <= :end_date
             GROUP BY province_name
             ORDER BY travel_count DESC
         ");
@@ -92,8 +92,8 @@ class CalendarController {
             FROM car_booking b
             LEFT JOIN employee e ON b.employee_id = e.id
             WHERE b.status = 'Confirmed'
-              AND b.booking_date >= :start_date
-              AND b.booking_date <= :end_date
+              AND b.start_time >= :start_date
+              AND b.start_time <= :end_date
             GROUP BY b.employee_id, e.full_name
             ORDER BY booking_count DESC
         ");
