@@ -125,7 +125,8 @@ class ReportController {
                         IFNULL(
                             (SELECT q.monthly_quota 
                              FROM car_quota_history q 
-                             WHERE q.car_id = c.id AND q.effective_month = :effective_month 
+                             WHERE q.car_id = c.id AND q.effective_month <= :effective_month 
+                             ORDER BY q.effective_month DESC
                              LIMIT 1), 
                             0
                         ) AS monthly_quota,
