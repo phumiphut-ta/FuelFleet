@@ -25,4 +25,63 @@ class AdminUserRepository implements AdminUserRepositoryInterface {
         $result = $stmt->fetch();
         return $result ?: null;
     }
+
+    public function all(): array {
+        $stmt = $this->db->prepare("SELECT * FROM admin_users ORDER BY id ASC");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function create(array $data): int {
+        $stmt = $this->db->prepare("
+            INSERT INTO admin_users (username, password, full_name, role)
+            VALUES (:username, :password, :full_name, :role)
+        ");
+        $stmt->execute([
+            'username' => $data['username'],
+            'password' => $data['password'],
+            'full_name' => $data['full_name'],
+            'role' => $data['role'] ?? 'admin'
+        ]);
+        return (int)$this->db->lastInsertId();
+    }
+
+    public function update(int $id, array $data): bool {
+        if (!empty($data['password'])) {
+            $stmt = $this->db->prepare("
+                UPDATE admin_users
+                SET username = :username,
+                    password = :password,
+                    full_name = :full_name,
+                    role = :role
+                WHERE id = :id
+            ");
+            return $stmt->execute([
+                'username' => $data['username'],
+                'password' => $data['password'],
+                'full_name' => $data['full_name'],
+                'role' => $data['role'] ?? 'admin',
+                'id' => $id
+            ]);
+        } else {
+            $stmt = $this->db->prepare("
+                UPDATE admin_users
+                SET username = :username,
+                    full_name = :full_name,
+                    role = :role
+                WHERE id = :id
+            ");
+            return $stmt->execute([
+                'username' => $data['username'],
+                'full_name' => $data['full_name'],
+                'role' => $data['role'] ?? 'admin',
+                'id' => $id
+            ]);
+        }
+    }
+
+    public function delete(int $id): bool {
+        $stmt = $this->db->prepare("DELETE FROM admin_users WHERE id = :id");
+        return $stmt->execute(['id' => $id]);
+    }
 }

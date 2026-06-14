@@ -101,5 +101,13 @@ $router->get('/admin/bookings/edit/{id}', [App\Controllers\Admin\BookingControll
 $router->post('/admin/bookings/update/{id}', [App\Controllers\Admin\BookingController::class, 'update']);
 $router->post('/admin/bookings/cancel/{id}', [App\Controllers\Admin\BookingController::class, 'cancel']);
 
+// 3.9 Admin Users Management
+$router->get('/admin/users', [App\Controllers\Admin\AdminUserController::class, 'index']);
+$router->get('/admin/users/new', [App\Controllers\Admin\AdminUserController::class, 'new']);
+$router->post('/admin/users/create', [App\Controllers\Admin\AdminUserController::class, 'create']);
+$router->get('/admin/users/edit/{id}', [App\Controllers\Admin\AdminUserController::class, 'edit']);
+$router->post('/admin/users/update/{id}', [App\Controllers\Admin\AdminUserController::class, 'update']);
+$router->post('/admin/users/delete/{id}', [App\Controllers\Admin\AdminUserController::class, 'delete']);
+
 // Resolve router and render views
 $router->resolve();

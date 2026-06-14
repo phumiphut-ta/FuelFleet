@@ -105,6 +105,9 @@
             <a href="/admin/audit-logs" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
                 <i class="fa-solid fa-history text-slate-500 text-sm w-5"></i>ประวัติการใช้งานระบบ
             </a>
+            <a href="/admin/users" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
+                <i class="fa-solid fa-user-shield text-slate-500 text-sm w-5"></i>จัดการผู้ดูแลระบบ
+            </a>
         </nav>
 
         <!-- Sidebar Footer Buttons -->
