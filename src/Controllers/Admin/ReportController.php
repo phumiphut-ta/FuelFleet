@@ -74,7 +74,7 @@ class ReportController {
         }
 
         $format = 'A4';
-        if ($reportType === 2) {
+        if ($reportType === 2 || $reportType === 9) {
             $format = 'A4-L';
         }
 
@@ -89,6 +89,8 @@ class ReportController {
             'autoLangToFont' => true,
             'tempDir' => $tempDir
         ]);
+
+        $mpdf->SetFooter('|หน้า {PAGENO}/{nbpg}|');
 
         // Base styles for professional official reports
         $htmlStyles = '
@@ -907,6 +909,128 @@ class ReportController {
                                 <td colspan="4" class="text-right" style="font-weight: bold;">รวมครั้งการจองทั้งหมดในช่วงเวลา</td>
                                 <td class="text-center" style="font-weight: bold; color: #4f46e5; font-size: 13px;">' . number_format($totalBookings) . ' ครั้ง</td>
                             </tr>
+                            </tbody>
+                        </table>';
+                }
+                break;
+
+            case 9: // Vehicle Booking Cancellation Report
+                $title = "รายงานการยกเลิกการจองใช้งานรถ";
+                
+                if (!$startDate || !$endDate) {
+                    $_SESSION['report_error'] = 'กรุณาระบุช่วงวันที่ (ตั้งแต่วันที่ และ ถึงวันที่) สำหรับรายงานการยกเลิกการจองใช้งานรถ';
+                    $response->redirect('/admin/reports');
+                    exit;
+                }
+
+                if (strtotime($startDate) > strtotime($endDate)) {
+                    $_SESSION['report_error'] = 'วันที่เริ่มต้น ห้ามอยู่หลังวันที่สิ้นสุด';
+                    $response->redirect('/admin/reports');
+                    exit;
+                }
+
+                // Query cancellations
+                $stmt = $db->prepare("
+                    SELECT 
+                        cl.cancelled_at,
+                        b.id AS booking_id,
+                        b.booking_date,
+                        b.start_time,
+                        b.end_time,
+                        b.purpose,
+                        b.cancel_reason,
+                        c.license_plate,
+                        c.color AS car_color,
+                        e.full_name AS employee_name,
+                        d.name AS department_name,
+                        divi.name AS division_name,
+                        al.username AS admin_username,
+                        au.full_name AS admin_fullname
+                    FROM booking_cancel_log cl
+                    INNER JOIN car_booking b ON cl.booking_id = b.id
+                    LEFT JOIN car_detail c ON b.car_id = c.id
+                    LEFT JOIN employee e ON b.employee_id = e.id
+                    LEFT JOIN department d ON e.department_id = d.id
+                    LEFT JOIN division divi ON e.division_id = divi.id
+                    LEFT JOIN audit_logs al ON (al.action = 'Cancel booking' AND al.table_name = 'car_booking' AND al.record_id = b.id)
+                    LEFT JOIN admin_users au ON al.user_id = au.id
+                    WHERE cl.cancelled_at >= :start_date AND cl.cancelled_at <= :end_date
+                    ORDER BY cl.cancelled_at DESC
+                ");
+                $stmt->execute([
+                    'start_date' => $startDate . ' 00:00:00',
+                    'end_date' => $endDate . ' 23:59:59'
+                ]);
+                $cancellations = $stmt->fetchAll();
+
+                $content = '
+                    <h1>' . $title . '</h1>
+                    <div class="subtitle">ตั้งแต่วันที่ ' . date('d/m/Y', strtotime($startDate)) . ' ถึงวันที่ ' . date('d/m/Y', strtotime($endDate)) . '</div>
+                    <table class="meta-table">
+                        <tr>
+                            <td>พิมพ์โดย: ' . htmlspecialchars($printedBy) . '</td>
+                            <td class="text-right">พิมพ์เมื่อ: ' . $printDate . '</td>
+                        </tr>
+                    </table>';
+
+                if (empty($cancellations)) {
+                    $content .= '<p class="text-center" style="padding: 40px 0; color: #777;">ไม่พบข้อมูลประวัติการยกเลิกการจองรถในช่วงเวลาดังกล่าว</p>';
+                } else {
+                    $content .= '
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%; text-align: center;">ลำดับ</th>
+                                    <th style="width: 10%; text-align: center;">ทะเบียนรถ</th>
+                                    <th style="width: 15%;">ผู้จอง / สังกัด</th>
+                                    <th style="width: 15%;">วัตถุประสงค์</th>
+                                    <th style="width: 15%; text-align: center;">ช่วงเวลาจองเดินทาง</th>
+                                    <th style="width: 13%; text-align: center;">วันที่ยกเลิก</th>
+                                    <th style="width: 13%;">ผู้ยกเลิก</th>
+                                    <th style="width: 14%;">เหตุผลการยกเลิก</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+
+                    $rank = 1;
+                    foreach ($cancellations as $row) {
+                        $deptInfo = [];
+                        if ($row['department_name']) {
+                            $deptInfo[] = $row['department_name'];
+                        }
+                        if ($row['division_name']) {
+                            $deptInfo[] = $row['division_name'];
+                        }
+                        $deptText = !empty($deptInfo) ? ' (' . implode(', ', $deptInfo) . ')' : '';
+
+                        if ($row['admin_username']) {
+                            $cancellerName = $row['admin_fullname'] ? $row['admin_fullname'] : $row['admin_username'];
+                            $canceller = '<span style="color: #ef4444; font-weight: bold;">ผู้ดูแลระบบ:</span> ' . htmlspecialchars($cancellerName);
+                        } else {
+                            $canceller = '<span style="color: #4f46e5;">ผู้ใช้งาน:</span> ' . htmlspecialchars($row['employee_name']);
+                        }
+
+                        $reason = trim($row['cancel_reason'] ?? '');
+                        if ($reason === '') {
+                            $displayReason = !$row['admin_username'] ? 'ผู้ใช้งานขอยกเลิกเอง' : '-';
+                        } else {
+                            $displayReason = $reason;
+                        }
+
+                        $content .= '
+                            <tr>
+                                <td class="text-center">' . $rank++ . '</td>
+                                <td class="text-center" style="font-weight: bold;">' . htmlspecialchars($row['license_plate']) . '</td>
+                                <td>' . htmlspecialchars($row['employee_name']) . $deptText . '</td>
+                                <td>' . htmlspecialchars($row['purpose']) . '</td>
+                                <td class="text-center" style="font-size: 10px;">' . date('d/m/Y H:i', strtotime($row['start_time'])) . '<br>ถึง ' . date('d/m/Y H:i', strtotime($row['end_time'])) . '</td>
+                                <td class="text-center" style="font-size: 10px;">' . date('d/m/Y H:i', strtotime($row['cancelled_at'])) . '</td>
+                                <td style="font-size: 11px;">' . $canceller . '</td>
+                                <td style="font-size: 11px; color: #475569;">' . htmlspecialchars($displayReason) . '</td>
+                            </tr>';
+                    }
+
+                    $content .= '
                             </tbody>
                         </table>';
                 }

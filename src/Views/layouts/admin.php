@@ -91,6 +91,9 @@ try {
             <a href="/admin/cars" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
                 <i class="fa-solid fa-car text-slate-500 text-sm w-5"></i>ทะเบียนยานพาหนะ
             </a>
+            <a href="/admin/history-import" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
+                <i class="fa-solid fa-file-import text-slate-500 text-sm w-5"></i>บันทึกประวัติย้อนหลัง
+            </a>
 
             <p class="text-[10px] font-bold text-slate-600 tracking-wider uppercase px-3 pt-4 mb-2">การควบคุมและโอนโควต้า</p>
             <a href="/admin/quotas" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">

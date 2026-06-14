@@ -94,6 +94,13 @@
                     <span class="h-6 w-6 rounded-lg bg-indigo-500/10 flex items-center justify-center font-bold text-[10px]">8</span>
                     <span>รายงานสถิติผู้จองใช้งานรถยนต์ส่วนกลาง</span>
                 </button>
+
+                <!-- R9 -->
+                <button type="button" @click="reportType = 9" :class="reportType === 9 ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300' : 'bg-slate-900/40 border-slate-850 text-slate-400 hover:text-white hover:border-slate-800'"
+                    class="w-full text-left p-3 border rounded-xl font-semibold flex items-center gap-2 transition duration-150">
+                    <span class="h-6 w-6 rounded-lg bg-indigo-500/10 flex items-center justify-center font-bold text-[10px]">9</span>
+                    <span>รายงานการยกเลิกการจองใช้งานรถ</span>
+                </button>
             </div>
         </div>
 
@@ -157,8 +164,8 @@
                             </select>
                         </div>
 
-                        <!-- Date Range Selection (Visible only for R8) -->
-                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6" x-show="reportType === 8" x-transition>
+                        <!-- Date Range Selection (Visible for R8 and R9) -->
+                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6" x-show="reportType === 8 || reportType === 9" x-transition>
                             <div>
                                 <label for="start_date" class="block text-xs font-semibold text-slate-400 mb-2">ตั้งแต่วันที่ <span class="text-rose-500">*</span></label>
                                 <input type="date" id="start_date" name="start_date" 

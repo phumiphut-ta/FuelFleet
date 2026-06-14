@@ -118,5 +118,12 @@ $router->post('/admin/agreements/create', [App\Controllers\Admin\AgreementContro
 $router->post('/admin/agreements/update/{id}', [App\Controllers\Admin\AgreementController::class, 'update']);
 $router->post('/admin/agreements/delete/{id}', [App\Controllers\Admin\AgreementController::class, 'delete']);
 
+// 3.11 Historical Data Import Management
+$router->get('/admin/history-import', [App\Controllers\Admin\HistoryImportController::class, 'index']);
+$router->post('/admin/history-import/fuel', [App\Controllers\Admin\HistoryImportController::class, 'saveFuel']);
+$router->post('/admin/history-import/travel', [App\Controllers\Admin\HistoryImportController::class, 'saveTravel']);
+$router->post('/admin/history-import/fuel/delete/{id}', [App\Controllers\Admin\HistoryImportController::class, 'deleteFuel']);
+$router->post('/admin/history-import/travel/delete', [App\Controllers\Admin\HistoryImportController::class, 'deleteTravel']);
+
 // Resolve router and render views
 $router->resolve();
