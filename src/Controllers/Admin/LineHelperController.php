@@ -141,10 +141,13 @@ class LineHelperController {
             // 1. Save template setting
             $stmtSettings = $db->prepare("
                 INSERT INTO system_settings (setting_key, setting_value, description)
-                VALUES ('line_announcement_template', :val, 'เทมเพลตสำหรับข้อความประกาศอัปเดตโควต้าน้ำมันทาง LINE')
-                ON DUPLICATE KEY UPDATE setting_value = :val
+                VALUES ('line_announcement_template', :val1, 'เทมเพลตสำหรับข้อความประกาศอัปเดตโควต้าน้ำมันทาง LINE')
+                ON DUPLICATE KEY UPDATE setting_value = :val2
             ");
-            $stmtSettings->execute(['val' => $templateText]);
+            $stmtSettings->execute([
+                'val1' => $templateText,
+                'val2' => $templateText
+            ]);
 
             // 2. Save thresholds
             if (is_array($thresholds)) {
