@@ -111,6 +111,9 @@ class LineHelperController {
             );
         }
 
+        // Clean up any unmatched vehicle placeholders to avoid raw code leaking, providing a helpful typo warning
+        $interpolatedMessage = preg_replace('/\{(used|quota|remaining):([^\}]+)\}/u', '(ไม่พบทะเบียนรถ: $2)', $interpolatedMessage);
+
         $success = $_SESSION['line_helper_success'] ?? null;
         $error = $_SESSION['line_helper_error'] ?? null;
         unset($_SESSION['line_helper_success'], $_SESSION['line_helper_error']);

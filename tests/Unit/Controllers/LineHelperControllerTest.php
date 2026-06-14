@@ -55,7 +55,7 @@ class LineHelperControllerTest extends TestCase {
         
         $mockStmt2 = $this->createMock(\PDOStatement::class);
         $mockStmt2->method('execute')->willReturn(true);
-        $mockStmt2->method('fetchColumn')->willReturn('📢 อัปเดตโควต้าน้ำมัน (ประจำวันที่ {date})\n\n{vehicle_list}\n\nโควต้ารถ มค-5678: {used:มค-5678}/{quota:มค-5678} คงเหลือ {remaining:มค-5678}');
+        $mockStmt2->method('fetchColumn')->willReturn('📢 อัปเดตโควต้าน้ำมัน (ประจำวันที่ {date})\n\n{vehicle_list}\n\nโควต้ารถ มค-5678: {used:มค-5678}/{quota:มค-5678} คงเหลือ {remaining:มค-5678}\n\nผิด: {used:ทะเบียนปลอม}');
 
         $mockPdo->method('query')->willReturn($mockStmt1);
         $mockPdo->method('prepare')->willReturn($mockStmt2);
@@ -74,6 +74,7 @@ class LineHelperControllerTest extends TestCase {
         $output = ob_get_clean();
         
         $this->assertNotEmpty($output);
+        $this->assertStringContainsString('(ไม่พบทะเบียนรถ: ทะเบียนปลอม)', $output);
         // Clean up static database connection instance
         $property->setValue(null, null);
     }
