@@ -95,6 +95,7 @@ CREATE TABLE car_detail (
     fuel_type VARCHAR(50) NOT NULL, -- Diesel, Gasohol 95, Gasohol 91, E20, E85, Benzene
     status VARCHAR(50) DEFAULT 'Active', -- Active, Suspended
     note TEXT NULL,
+    remaining_low_threshold DECIMAL(10,2) DEFAULT 20.00,
     color VARCHAR(50) DEFAULT '#4f46e5',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -273,7 +274,8 @@ INSERT INTO car_quota_history (car_id, monthly_quota, effective_month) VALUES
 -- Seed system settings
 INSERT INTO system_settings (setting_key, setting_value, description) VALUES
 ('pdf_report_footer', 'รายงานนี้สร้างและพิมพ์โดยระบบควบคุมโควต้าน้ำมันยานพาหนะอัตโนมัติ <strong>FuelFleet™</strong><br>พิมพ์ใบเสร็จและภาพแนบย้อนหลังถูกต้องตามข้อบังคับระเบียบราชการองค์กร', 'ข้อความท้ายกระดาษของรายงาน PDF ทุกฉบับ'),
-('footer_copyright', '© 2026 FuelFleet™. ระบบบริหารรถส่วนราชการ. สงวนลิขสิทธิ์ทั้งหมด.', 'ข้อความลิขสิทธิ์ที่แสดงด้านล่างเว็บไซต์');
+('footer_copyright', '© 2026 FuelFleet™. ระบบบริหารรถส่วนราชการ. สงวนลิขสิทธิ์ทั้งหมด.', 'ข้อความลิขสิทธิ์ที่แสดงด้านล่างเว็บไซต์'),
+('line_announcement_template', '📢 อัปเดตโควต้าน้ำมันรถยนต์ส่วนกลาง (ประจำวันที่ {date})\n\n{vehicle_list}\n🛑 โปรดทราบ:\nหากมีการใช้งานน้ำมันเกินโควต้าที่กำหนด จะไม่สามารถเบิกใบเสร็จค่าน้ำมันส่วนที่เกินได้\nขอให้ทุกท่านระมัดระวังและวางแผนการเดินทางอย่างรอบคอบ', 'เทมเพลตสำหรับข้อความประกาศอัปเดตโควต้าน้ำมันทาง LINE');
 
 -- 18. booking_agreements
 CREATE TABLE booking_agreements (

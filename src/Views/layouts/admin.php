@@ -2,8 +2,39 @@
 try {
     $__db = \App\Core\Database::getConnection();
     $__pendingCount = (int)$__db->query("SELECT COUNT(*) FROM car_booking WHERE status = 'Pending'")->fetchColumn();
+    
+    // Check if there are vehicles with remaining liters <= threshold
+    $__currentMonthStart = date('Y-m-01');
+    $__currentMonthEnd   = date('Y-m-t');
+    $__lowQuotaCarsCount = (int)$__db->query("
+        SELECT COUNT(*)
+        FROM (
+            SELECT
+                c.id,
+                COALESCE(q.monthly_quota, 0) AS quota_liters,
+                COALESCE(SUM(r.liters), 0) AS used_liters,
+                COALESCE(c.remaining_low_threshold, 20.00) AS threshold
+            FROM car_detail c
+            LEFT JOIN car_quota_history q
+                ON q.car_id = c.id
+                AND q.id = (
+                    SELECT id FROM car_quota_history
+                    WHERE car_id = c.id
+                    ORDER BY effective_month DESC
+                    LIMIT 1
+                )
+            LEFT JOIN gas_receipt r
+                ON r.car_id = c.id
+                AND r.status = 'Verified'
+                AND r.receipt_date BETWEEN '{$__currentMonthStart}' AND '{$__currentMonthEnd}'
+            WHERE c.status = 'Active'
+            GROUP BY c.id, q.monthly_quota, c.remaining_low_threshold
+        ) AS car_summary
+        WHERE (quota_liters - used_liters) <= threshold AND quota_liters > 0
+    ")->fetchColumn();
 } catch (\Throwable $e) {
     $__pendingCount = 0;
+    $__lowQuotaCarsCount = 0;
 }
 ?>
 <!DOCTYPE html>
@@ -118,6 +149,16 @@ try {
             <a href="/admin/receipts" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
                 <i class="fa-solid fa-file-invoice-dollar text-slate-500 text-sm w-5"></i>ตรวจสอบใบเสร็จน้ำมัน
             </a>
+            <a href="/admin/line-helper" class="flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition">
+                <span class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-bullhorn text-slate-500 text-sm w-5"></i>ตัวช่วยแจ้งเตือน LINE
+                </span>
+                <?php if ($__lowQuotaCarsCount > 0): ?>
+                    <span class="px-1.5 py-0.5 text-[9px] font-extrabold bg-rose-500 text-white rounded-full animate-pulse">
+                        <?= $__lowQuotaCarsCount ?>
+                    </span>
+                <?php endif; ?>
+            </a>
 
             <p class="text-[10px] font-bold text-slate-600 tracking-wider uppercase px-3 pt-4 mb-2">ความปลอดภัยและรายงาน</p>
             <a href="/admin/reports" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/40 transition gap-2.5">
@@ -161,6 +202,12 @@ try {
                     <a href="/admin/bookings" class="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-450 hover:bg-amber-500/20 transition animate-pulse">
                         <i class="fa-solid fa-bell text-[11px] text-amber-400"></i>
                         <span class="text-[10px] font-extrabold tracking-tight">การจองรออนุมัติ <?= $__pendingCount ?> รายการ</span>
+                    </a>
+                <?php endif; ?>
+                <?php if ($__lowQuotaCarsCount > 0): ?>
+                    <a href="/admin/line-helper" class="flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400 hover:bg-rose-500/20 transition animate-pulse">
+                        <i class="fa-solid fa-bullhorn text-[11px] text-rose-450"></i>
+                        <span class="text-[10px] font-extrabold tracking-tight">โควต้าใกล้หมด <?= $__lowQuotaCarsCount ?> คัน (ควรแจ้งเตือน)</span>
                     </a>
                 <?php endif; ?>
                 <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span> <span class="hidden sm:inline">เชื่อมต่อฐานข้อมูลสำเร็จ</span></span>

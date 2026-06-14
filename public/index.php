@@ -125,5 +125,9 @@ $router->post('/admin/history-import/travel', [App\Controllers\Admin\HistoryImpo
 $router->post('/admin/history-import/fuel/delete/{id}', [App\Controllers\Admin\HistoryImportController::class, 'deleteFuel']);
 $router->post('/admin/history-import/travel/delete', [App\Controllers\Admin\HistoryImportController::class, 'deleteTravel']);
 
+// 3.12 LINE Alert Helper
+$router->get('/admin/line-helper', [App\Controllers\Admin\LineHelperController::class, 'index']);
+$router->post('/admin/line-helper/save', [App\Controllers\Admin\LineHelperController::class, 'save']);
+
 // Resolve router and render views
 $router->resolve();
