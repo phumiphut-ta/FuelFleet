@@ -1,0 +1,29 @@
+# Composer dependency downloads
+/vendor/
+
+# PHPUnit cache, configuration and reports
+/.phpunit.cache/
+/PHPUnit/
+/coverage/
+
+# OS-specific temporary files
+.DS_Store
+Thumbs.db
+
+# IDEs, text editors and workspace settings
+/.idea/
+/.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment Configuration Secrets
+.env
+
+# System & Application User Uploaded Receipts
+/public/uploads/*
+!/public/uploads/.gitkeep
+/public/uploads/tmp/*
+!/public/uploads/tmp/.gitkeep
