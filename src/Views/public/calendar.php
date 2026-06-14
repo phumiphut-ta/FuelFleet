@@ -127,7 +127,7 @@
             <template x-if="eventDetails.type === 'booking'">
                 <div>
                     <div x-show="!cancelFormOpen" class="flex gap-2">
-                        <a :href="'/booking/edit/' + eventDetails.id" class="flex-grow py-2.5 bg-indigo-950/40 border border-indigo-900/50 hover:bg-indigo-600 hover:text-white text-indigo-400 text-center text-xs font-semibold rounded-xl transition duration-200">
+                        <a :href="'<?= \App\Core\Request::getBasePath() ?>/booking/edit/' + eventDetails.id" class="flex-grow py-2.5 bg-indigo-950/40 border border-indigo-900/50 hover:bg-indigo-600 hover:text-white text-indigo-400 text-center text-xs font-semibold rounded-xl transition duration-200">
                             <i class="fa-solid fa-pen-to-square mr-1"></i> แก้ไขการจอง
                         </a>
                         <button @click="cancelFormOpen = true" class="flex-grow py-2.5 bg-rose-950/40 border border-rose-900/50 hover:bg-rose-500 hover:text-white text-rose-400 text-xs font-semibold rounded-xl transition duration-200">
