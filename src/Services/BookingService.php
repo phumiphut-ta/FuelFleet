@@ -31,7 +31,7 @@ class BookingService {
             ];
         }
 
-        $overlaps = $this->bookingRepo->getOverlappingBookings($carId, $startTime, $endTime);
+        $overlaps = $this->bookingRepo->getOverlappingBookings($carId, $startTime, $endTime, null, ['Confirmed', 'Pending']);
         if (!empty($overlaps)) {
             $overlapList = [];
             foreach ($overlaps as $overlap) {
@@ -95,7 +95,7 @@ class BookingService {
             ];
         }
 
-        $overlaps = $this->bookingRepo->getOverlappingBookings($carId, $startTime, $endTime, $bookingId);
+        $overlaps = $this->bookingRepo->getOverlappingBookings($carId, $startTime, $endTime, $bookingId, ['Confirmed', 'Pending']);
         if (!empty($overlaps)) {
             $overlapList = [];
             foreach ($overlaps as $overlap) {
@@ -148,7 +148,7 @@ class BookingService {
             ];
         }
 
-        $overlaps = $this->bookingRepo->getOverlappingBookings($carId, $startTime, $endTime, $bookingId);
+        $overlaps = $this->bookingRepo->getOverlappingBookings($carId, $startTime, $endTime, $bookingId, ['Confirmed']);
         if (!empty($overlaps)) {
             $overlapList = [];
             foreach ($overlaps as $overlap) {

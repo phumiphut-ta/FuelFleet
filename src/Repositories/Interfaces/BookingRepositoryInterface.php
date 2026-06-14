@@ -16,7 +16,7 @@ interface BookingRepositoryInterface {
     public function exportAllBookings(string $search, ?int $carId = null, ?int $employeeId = null, ?string $startDate = null, ?string $endDate = null): array;
 
     // Safety checks
-    public function getOverlappingBookings(int $carId, string $startTime, string $endTime, ?int $excludeId = null): array;
+    public function getOverlappingBookings(int $carId, string $startTime, string $endTime, ?int $excludeId = null, array $statuses = ['Confirmed']): array;
     
     // Calendar events
     public function getCalendarEvents(): array;

@@ -137,13 +137,22 @@ class BookingRepository implements BookingRepositoryInterface {
         }
     }
 
-    public function getOverlappingBookings(int $carId, string $startTime, string $endTime, ?int $excludeId = null): array {
+    public function getOverlappingBookings(int $carId, string $startTime, string $endTime, ?int $excludeId = null, array $statuses = ['Confirmed']): array {
+        // Sanitize statuses to prevent SQL injection
+        $sanitizedStatuses = array_map(function($status) {
+            return "'" . preg_replace('/[^a-zA-Z]/', '', $status) . "'";
+        }, $statuses);
+        $inClause = implode(',', $sanitizedStatuses);
+        if (empty($inClause)) {
+            $inClause = "'Confirmed'";
+        }
+
         $sql = "
             SELECT b.*, e.full_name AS employee_name
             FROM car_booking b
             LEFT JOIN employee e ON b.employee_id = e.id
             WHERE b.car_id = :car_id 
-              AND b.status = 'Confirmed'
+              AND b.status IN ($inClause)
               AND b.start_time < :end_time 
               AND b.end_time > :start_time
         ";

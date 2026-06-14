@@ -19,7 +19,7 @@ class BookingServiceTest extends TestCase {
 
         $bookingRepo->expects($this->once())
             ->method('getOverlappingBookings')
-            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59')
+            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59', null, ['Confirmed', 'Pending'])
             ->willReturn([]);
 
         $bookingRepo->expects($this->once())
@@ -224,7 +224,7 @@ class BookingServiceTest extends TestCase {
 
         $bookingRepo->expects($this->once())
             ->method('getOverlappingBookings')
-            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59', 10)
+            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59', 10, ['Confirmed', 'Pending'])
             ->willReturn([]);
 
         $bookingRepo->expects($this->once())
@@ -295,7 +295,7 @@ class BookingServiceTest extends TestCase {
 
         $bookingRepo->expects($this->once())
             ->method('getOverlappingBookings')
-            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59', 10)
+            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59', 10, ['Confirmed', 'Pending'])
             ->willReturn([
                 [
                     'employee_name' => 'Jane Smith',
@@ -343,7 +343,7 @@ class BookingServiceTest extends TestCase {
 
         $bookingRepo->expects($this->once())
             ->method('getOverlappingBookings')
-            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59', 10)
+            ->with(1, '2026-06-01 00:00:00', '2026-06-01 23:59:59', 10, ['Confirmed'])
             ->willReturn([]);
 
         $bookingRepo->expects($this->once())
