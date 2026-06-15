@@ -28,6 +28,15 @@ class Router {
             $path = rtrim($path, '/');
         }
 
+        // Validate CSRF for POST requests
+        if ($method === 'POST') {
+            $token = $_POST['csrf_token'] ?? null;
+            if (!\App\Core\Csrf::validateToken($token)) {
+                $this->response->setStatusCode(403);
+                return $this->renderView('error', ['message' => 'การตรวจสอบความปลอดภัยล้มเหลว (CSRF token invalid)']);
+            }
+        }
+
         $callback = $this->routes[$method][$path] ?? false;
 
         if ($callback === false) {
@@ -72,6 +81,15 @@ class Router {
         $viewContent = $this->renderOnlyView($view, $params);
         $output = str_replace('{{content}}', $viewContent, $layoutContent);
         
+        // Inject CSRF token into POST forms dynamically
+        $output = preg_replace_callback(
+            '#(<form\b[^>]*\bmethod=["\']?post["\']?[^>]*>)#i',
+            function($matches) {
+                return $matches[1] . "\n" . '<input type="hidden" name="csrf_token" value="' . \App\Core\Csrf::generateToken() . '">';
+            },
+            $output
+        );
+
         // Dynamically prepend the subdirectory base path to absolute URLs
         $basePath = Request::getBasePath();
         if (!empty($basePath)) {

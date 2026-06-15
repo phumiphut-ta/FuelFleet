@@ -540,15 +540,22 @@ class ReportController {
                     return;
                 }
 
-                $car = $db->query("SELECT * FROM car_detail WHERE id = {$carId}")->fetch();
-                $stmtReceipts = $db->query("
+                $stmtCar = $db->prepare("SELECT * FROM car_detail WHERE id = :carId");
+                $stmtCar->execute(['carId' => $carId]);
+                $car = $stmtCar->fetch();
+
+                $stmtReceipts = $db->prepare("
                     SELECT r.*, e.full_name AS employee_name, a.file_path
                     FROM gas_receipt r
                     LEFT JOIN employee e ON r.employee_id = e.id
                     LEFT JOIN receipt_attachment a ON a.receipt_id = r.id
-                    WHERE r.car_id = {$carId} AND r.status != 'Cancelled' AND DATE_FORMAT(r.receipt_date, '%m-%Y') = '{$month}-{$year}'
+                    WHERE r.car_id = :carId AND r.status != 'Cancelled' AND DATE_FORMAT(r.receipt_date, '%m-%Y') = :monthYear
                     ORDER BY r.receipt_date ASC
                 ");
+                $stmtReceipts->execute([
+                    'carId' => $carId,
+                    'monthYear' => sprintf('%02d-%d', $month, $year)
+                ]);
                 $receipts = $stmtReceipts->fetchAll();
 
                 // Page 1: Summary table
@@ -1227,7 +1234,9 @@ class ReportController {
                     return;
                 }
 
-                $employee = $db->query("SELECT * FROM employee WHERE id = {$employeeId}")->fetch();
+                $stmtEmp = $db->prepare("SELECT * FROM employee WHERE id = :id");
+                $stmtEmp->execute(['id' => $employeeId]);
+                $employee = $stmtEmp->fetch();
                 $stmtReceipts = $db->prepare("
                     SELECT r.*, c.license_plate, a.file_path
                     FROM gas_receipt r

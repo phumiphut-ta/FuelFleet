@@ -183,7 +183,9 @@ class ReceiptController {
 
         try {
             $db = Database::getConnection();
-            $car = $db->query("SELECT * FROM car_detail WHERE id = {$carId}")->fetch();
+            $stmt = $db->prepare("SELECT * FROM car_detail WHERE id = :id");
+            $stmt->execute(['id' => $carId]);
+            $car = $stmt->fetch();
             if (!$car) {
                 throw new Exception("ไม่พบข้อมูลยานพาหนะดังกล่าวในระบบ");
             }
@@ -392,7 +394,9 @@ class ReceiptController {
 
         try {
             $db = Database::getConnection();
-            $car = $db->query("SELECT * FROM car_detail WHERE id = {$carId}")->fetch();
+            $stmt = $db->prepare("SELECT * FROM car_detail WHERE id = :id");
+            $stmt->execute(['id' => $carId]);
+            $car = $stmt->fetch();
             if (!$car) {
                 throw new Exception("ไม่พบข้อมูลยานพาหนะดังกล่าวในระบบ");
             }

@@ -1,8 +1,8 @@
 <?php
 namespace App\Core;
 
-class AuthMiddleware {
-    public static function checkAdmin(): void {
+class Csrf {
+    public static function generateToken(): string {
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
                 'lifetime' => 0,
@@ -14,13 +14,13 @@ class AuthMiddleware {
             ]);
             session_start();
         }
-        if (!isset($_SESSION['admin_user'])) {
-            header("Location: /admin/login");
-            exit;
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
+        return $_SESSION['csrf_token'];
     }
 
-    public static function isAdminLoggedIn(): bool {
+    public static function validateToken(?string $token): bool {
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
                 'lifetime' => 0,
@@ -32,6 +32,10 @@ class AuthMiddleware {
             ]);
             session_start();
         }
-        return isset($_SESSION['admin_user']);
+        $sessionToken = $_SESSION['csrf_token'] ?? '';
+        if (empty($sessionToken) || empty($token)) {
+            return false;
+        }
+        return hash_equals($sessionToken, $token);
     }
 }

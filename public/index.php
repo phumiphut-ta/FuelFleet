@@ -1,6 +1,14 @@
 <?php
-// Start Session for Authentication
+// Start Session for Authentication with Secure Parameters
 if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
     session_start();
 }
 
