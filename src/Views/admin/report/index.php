@@ -108,6 +108,13 @@
                     <span class="h-6 w-6 rounded-lg bg-indigo-500/10 flex items-center justify-center font-bold text-[10px]">10</span>
                     <span>รายงานการจองรถยนต์ประจำเดือน</span>
                 </button>
+
+                <!-- R11 -->
+                <button type="button" @click="reportType = 11" :class="reportType === 11 ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300' : 'bg-slate-900/40 border-slate-850 text-slate-400 hover:text-white hover:border-slate-800'"
+                    class="w-full text-left p-3 border rounded-xl font-semibold flex items-center gap-2 transition duration-150">
+                    <span class="h-6 w-6 rounded-lg bg-indigo-500/10 flex items-center justify-center font-bold text-[10px]">11</span>
+                    <span>รายงานใบเสร็จน้ำมันจำแนกรายพนักงาน</span>
+                </button>
             </div>
         </div>
 
@@ -175,8 +182,23 @@
                             </select>
                         </div>
 
+                        <!-- Employee Filter (Visible only for R11) -->
+                        <div class="md:col-span-2" x-show="reportType === 11" x-transition>
+                            <label for="employee_id" class="block text-xs font-semibold text-slate-400 mb-2">
+                                <span>เลือกพนักงานที่จะเปิดรายงานใบเสร็จค่าน้ำมัน</span>
+                                <span class="text-rose-500">*</span>
+                            </label>
+                            <select id="employee_id" name="employee_id" 
+                                class="block w-full px-3.5 py-2.5 border border-slate-800 bg-slate-950/60 rounded-xl text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition">
+                                <option value="" disabled :selected="reportType === 11">-- เลือกพนักงาน --</option>
+                                <?php foreach ($employees as $emp): ?>
+                                    <option value="<?= $emp['id'] ?>"><?= htmlspecialchars($emp['full_name']) ?> (<?= htmlspecialchars($emp['employee_code']) ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
                         <!-- Date Range Selection (Visible for R8 and R9) -->
-                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6" x-show="reportType === 8 || reportType === 9" x-transition>
+                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6" x-show="reportType === 8 || reportType === 9 || reportType === 11" x-transition>
                             <div>
                                 <label for="start_date" class="block text-xs font-semibold text-slate-400 mb-2">ตั้งแต่วันที่ <span class="text-rose-500">*</span></label>
                                 <input type="date" id="start_date" name="start_date" 

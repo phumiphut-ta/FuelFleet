@@ -17,6 +17,7 @@ class ReportController {
     public function index(Request $request, Response $response) {
         $db = Database::getConnection();
         $cars = $db->query("SELECT * FROM car_detail ORDER BY license_plate ASC")->fetchAll();
+        $employees = $db->query("SELECT * FROM employee WHERE status = 'Active' ORDER BY full_name ASC")->fetchAll();
 
         $success = $_SESSION['report_success'] ?? null;
         $error = $_SESSION['report_error'] ?? null;
@@ -25,6 +26,7 @@ class ReportController {
         $router = new Router($request, $response);
         return $router->renderView('admin/report/index', [
             'cars' => $cars,
+            'employees' => $employees,
             'success' => $success,
             'error' => $error
         ]);
@@ -34,6 +36,7 @@ class ReportController {
         $body = $request->getBody();
         $reportType = (int)($body['report_type'] ?? 1);
         $carId = isset($body['car_id']) && $body['car_id'] !== '' ? (int)$body['car_id'] : null;
+        $employeeId = isset($body['employee_id']) && $body['employee_id'] !== '' ? (int)$body['employee_id'] : null;
         $month = trim($body['month'] ?? date('m'));
         $year = trim($body['year'] ?? date('Y'));
         $startDate = isset($body['start_date']) && $body['start_date'] !== '' ? trim($body['start_date']) : null;
@@ -48,7 +51,7 @@ class ReportController {
             INSERT INTO report_print_log (report_type, printed_by, filter_criteria)
             VALUES (:report_type, :printed_by, :criteria)
         ");
-        $criteria = json_encode(['car_id' => $carId, 'month' => $month, 'year' => $year, 'start_date' => $startDate, 'end_date' => $endDate]);
+        $criteria = json_encode(['car_id' => $carId, 'employee_id' => $employeeId, 'month' => $month, 'year' => $year, 'start_date' => $startDate, 'end_date' => $endDate]);
         $stmtPrint->execute([
             'report_type' => "Report {$reportType}",
             'printed_by' => $printedBy,
@@ -531,7 +534,10 @@ class ReportController {
                 
                 if (!$carId) {
                     $response->html("<script>alert('กรุณาเลือกทะเบียนรถยนต์หลวงที่จะเปิดรายงานใบเสร็จค่าน้ำมันประจำเดือนจำแนกรายคัน!'); history.back();</script>");
-                    exit;
+                    if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                        exit;
+                    }
+                    return;
                 }
 
                 $car = $db->query("SELECT * FROM car_detail WHERE id = {$carId}")->fetch();
@@ -834,13 +840,19 @@ class ReportController {
                 if (!$startDate || !$endDate) {
                     $_SESSION['report_error'] = 'กรุณาระบุช่วงวันที่ (ตั้งแต่วันที่ และ ถึงวันที่) สำหรับรายงานสถิติ';
                     $response->redirect('/admin/reports');
-                    exit;
+                    if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                        exit;
+                    }
+                    return;
                 }
 
                 if (strtotime($startDate) > strtotime($endDate)) {
                     $_SESSION['report_error'] = 'วันที่เริ่มต้น ห้ามอยู่หลังวันที่สิ้นสุด';
                     $response->redirect('/admin/reports');
-                    exit;
+                    if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                        exit;
+                    }
+                    return;
                 }
 
                 $stmt = $db->prepare("
@@ -921,13 +933,19 @@ class ReportController {
                 if (!$startDate || !$endDate) {
                     $_SESSION['report_error'] = 'กรุณาระบุช่วงวันที่ (ตั้งแต่วันที่ และ ถึงวันที่) สำหรับรายงานการยกเลิกการจองใช้งานรถ';
                     $response->redirect('/admin/reports');
-                    exit;
+                    if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                        exit;
+                    }
+                    return;
                 }
 
                 if (strtotime($startDate) > strtotime($endDate)) {
                     $_SESSION['report_error'] = 'วันที่เริ่มต้น ห้ามอยู่หลังวันที่สิ้นสุด';
                     $response->redirect('/admin/reports');
-                    exit;
+                    if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                        exit;
+                    }
+                    return;
                 }
 
                 // Query cancellations
@@ -1181,6 +1199,177 @@ class ReportController {
                         </table>';
                 }
                 break;
+
+            case 11: // Fuel Receipt Report Classified by Employee
+                $title = "รายงานใบเสร็จน้ำมันจำแนกรายพนักงาน";
+                
+                if (!$employeeId) {
+                    $response->html("<script>alert('กรุณาเลือกพนักงานที่จะเปิดรายงานใบเสร็จน้ำมันจำแนกรายพนักงาน!'); history.back();</script>");
+                    if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                        exit;
+                    }
+                    return;
+                }
+
+                if (!$startDate || !$endDate) {
+                    $response->html("<script>alert('กรุณาระบุช่วงวันที่ (ตั้งแต่วันที่ และ ถึงวันที่) สำหรับรายงาน!'); history.back();</script>");
+                    if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                        exit;
+                    }
+                    return;
+                }
+
+                if (strtotime($startDate) > strtotime($endDate)) {
+                    $response->html("<script>alert('วันที่เริ่มต้น ห้ามอยู่หลังวันที่สิ้นสุด!'); history.back();</script>");
+                    if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                        exit;
+                    }
+                    return;
+                }
+
+                $employee = $db->query("SELECT * FROM employee WHERE id = {$employeeId}")->fetch();
+                $stmtReceipts = $db->prepare("
+                    SELECT r.*, c.license_plate, a.file_path
+                    FROM gas_receipt r
+                    LEFT JOIN car_detail c ON r.car_id = c.id
+                    LEFT JOIN receipt_attachment a ON a.receipt_id = r.id
+                    WHERE r.employee_id = :employee_id 
+                      AND r.status != 'Cancelled' 
+                      AND r.receipt_date >= :start_date 
+                      AND r.receipt_date <= :end_date
+                    ORDER BY r.receipt_date ASC
+                ");
+                $stmtReceipts->execute([
+                    'employee_id' => $employeeId,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate
+                ]);
+                $receipts = $stmtReceipts->fetchAll();
+
+                // Page 1: Summary table
+                $content = '
+                    <h1>' . $title . '</h1>
+                    <div class="subtitle">ประจำตัวพนักงาน ' . htmlspecialchars($employee['full_name']) . ' (' . htmlspecialchars($employee['employee_code']) . ') &bull; ช่วงวันที่ ' . date('d/m/Y', strtotime($startDate)) . ' ถึงวันที่ ' . date('d/m/Y', strtotime($endDate)) . '</div>
+                    <table class="meta-table">
+                        <tr>
+                            <td>พิมพ์โดย: ' . htmlspecialchars($printedBy) . '</td>
+                            <td class="text-right">พิมพ์เมื่อ: ' . $printDate . '</td>
+                        </tr>
+                    </table>
+                    
+                    <h3 style="font-size: 13px; font-weight: bold; margin-top: 10px;">ส่วนที่ 1: ตารางสรุปรวมใบเสร็จค่าน้ำมัน</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>เลขที่ใบเสร็จ</th>
+                                <th>ลงวันที่</th>
+                                <th>ทะเบียนรถ</th>
+                                <th class="text-right">จำนวนลิตร</th>
+                                <th class="text-right">จำนวนเงิน</th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+                
+                if (empty($receipts)) {
+                    $content .= '<tr><td colspan="5" class="text-center">ไม่พบใบเสร็จน้ำมันได้รับการบันทึกในรอบเดือนนี้</td></tr>';
+                } else {
+                    $sumLiters = 0;
+                    $sumAmount = 0;
+                    foreach ($receipts as $r) {
+                        $sumLiters += $r['liters'];
+                        $sumAmount += $r['amount'];
+                        $content .= '
+                            <tr>
+                                <td style="font-weight: bold; color: #1e3a8a;">' . htmlspecialchars($r['receipt_number']) . '</td>
+                                <td>' . date('d/m/Y', strtotime($r['receipt_date'])) . '</td>
+                                <td style="font-weight: bold;">' . htmlspecialchars($r['license_plate']) . '</td>
+                                <td class="text-right">' . number_format($r['liters'], 2) . ' L</td>
+                                <td class="text-right">' . number_format($r['amount'], 2) . ' ฿</td>
+                            </tr>';
+                    }
+                    $content .= '
+                        <tr class="total-row">
+                            <td colspan="3" class="text-right">รวมสุทธิ (' . count($receipts) . ' ใบเสร็จ):</td>
+                            <td class="text-right">' . number_format($sumLiters, 2) . ' L</td>
+                            <td class="text-right">' . number_format($sumAmount, 2) . ' ฿</td>
+                        </tr>';
+                }
+                
+                $content .= '</tbody></table>';
+
+                // Following Pages: Renders each image/PDF attachment centered on its own page
+                if (!empty($receipts)) {
+                    foreach ($receipts as $r) {
+                        if ($r['file_path']) {
+                            $diskPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 3) . '/public' . $r['file_path']);
+                            $ext = strtolower(pathinfo($r['file_path'], PATHINFO_EXTENSION));
+                            
+                            if (file_exists($diskPath)) {
+                                if ($ext === 'pdf') {
+                                    $content .= '
+                                        <pagebreak />
+                                        <div style="padding: 20px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #f8fafc; min-height: 500px;">
+                                            <div style="text-align: center; margin-bottom: 25px;">
+                                                <h2 style="font-size: 15px; font-weight: bold; color: #1e293b; margin: 0 0 5px 0;">ใบรับรองการแนบเอกสารหลักฐานอิเล็กทรอนิกส์</h2>
+                                                <div style="font-size: 10px; color: #64748b;">(Electronic Document Attachment Certificate / Fuel Voucher)</div>
+                                            </div>
+                                            
+                                            <table style="width: 100%; font-size: 11px; border-collapse: collapse; margin-bottom: 30px;">
+                                                <tr>
+                                                    <td style="padding: 8px; font-weight: bold; width: 30%; border-bottom: 1px solid #e2e8f0; color: #475569;">เลขที่ใบเสร็จรับเงิน:</td>
+                                                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0f172a;">' . htmlspecialchars($r['receipt_number']) . '</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">วันที่ระบุในใบเสร็จ:</td>
+                                                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #334155;">' . date('d/m/Y', strtotime($r['receipt_date'])) . '</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">พนักงานผู้ยื่นเติมน้ำมัน:</td>
+                                                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #334155;">' . htmlspecialchars($employee['full_name']) . '</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">ยานพาหนะหลวง:</td>
+                                                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #4f46e5;">' . htmlspecialchars($r['license_plate']) . '</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">ประเภทน้ำมัน / ปริมาณ:</td>
+                                                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #334155;">' . htmlspecialchars($r['fuel_type']) . ' / ' . number_format($r['liters'], 2) . ' ลิตร</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">ยอดค่าน้ำมันรวม:</td>
+                                                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0f172a;">' . number_format($r['amount'], 2) . ' ฿</td>
+                                                </tr>
+                                            </table>
+                                            
+                                            <div style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; background-color: #ffffff; text-align: center;">
+                                                <div style="font-size: 35px; margin-bottom: 10px; color: #ef4444;">📄</div>
+                                                <h3 style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 0 0 8px 0;">หลักฐานแนบเป็นรูปแบบเอกสาร PDF</h3>
+                                                <p style="font-size: 10px; color: #475569; line-height: 1.5; margin: 0 auto 15px auto; width: 85%;">
+                                                    เนื่องจากข้อมูลใบเสร็จได้รับการบันทึกในรูปแบบไฟล์เอกสาร PDF ระบบจึงได้แปลงและจัดทำใบรับรองใบสําคัญฉบับนี้เข้าเป็นส่วนหนึ่งของรายงานการตรวจสอบอย่างเป็นทางการ
+                                                </p>
+                                                <div style="font-weight: bold; font-size: 11px;">
+                                                    <a href="' . htmlspecialchars(Request::getBasePath() . $r['file_path']) . '" target="_blank" style="text-decoration: underline; color: #2563eb;">คลิกลิงก์เพื่อเปิดดูหรือดาวน์โหลดไฟล์ PDF ต้นฉบับ</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ';
+                                } else {
+                                    $content .= '
+                                        <pagebreak />
+                                        <div style="text-align: center; padding-top: 15px;">
+                                            <h2 style="font-size: 16px; font-weight: bold; margin-bottom: 5px; text-decoration: underline;">หลักฐานใบเสร็จเลขที่: ' . htmlspecialchars($r['receipt_number']) . '</h2>
+                                            <p style="font-size: 11px; color: #555; margin-bottom: 20px;">วันที่ลงใบเสร็จ: ' . date('d/m/Y', strtotime($r['receipt_date'])) . ' &bull; ทะเบียนรถ: ' . htmlspecialchars($r['license_plate']) . '</p>
+                                            <div style="margin-top: 20px; border: 1px dashed #cbd5e1; padding: 15px; background-color: #fafafa; display: inline-block;">
+                                                <img src="' . $diskPath . '" style="max-height: 540px; max-width: 100%; object-fit: contain;" />
+                                            </div>
+                                        </div>
+                                    ';
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
         }
 
         // Fetch PDF footer text from database if available (with backward-compatible fallback)
@@ -1207,6 +1396,9 @@ class ReportController {
         // Write HTML and output PDF to browser inline
         $mpdf->WriteHTML($htmlStyles . $content);
         $mpdf->Output($title . '.pdf', 'I');
-        exit;
+        if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+            exit;
+        }
+        return;
     }
 }

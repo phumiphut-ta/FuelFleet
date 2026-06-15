@@ -69,4 +69,296 @@ class ReportControllerTest extends TestCase {
         // Clean up static database connection instance
         $property->setValue(null, null);
     }
+
+    public function testGenerateReport11MissingEmployeeAlerts() {
+        $mockPdo = $this->createMock(\PDO::class);
+        $mockStmt = $this->createMock(\PDOStatement::class);
+        $mockStmt->method("execute")->willReturn(true);
+        $mockPdo->method("prepare")->willReturn($mockStmt);
+
+        // Inject mock PDO into Database
+        $reflection = new \ReflectionClass(\App\Core\Database::class);
+        $property = $reflection->getProperty("instance");
+        $property->setValue(null, $mockPdo);
+
+        $controller = new ReportController();
+
+        $request = $this->createMock(Request::class);
+        $request->method("getBody")->willReturn([
+            "report_type" => "11",
+            "employee_id" => "",
+            "month" => "05",
+            "year" => "2026"
+        ]);
+
+        $response = $this->createMock(Response::class);
+        $response->expects($this->once())
+                 ->method("html")
+                 ->with($this->stringContains("กรุณาเลือกพนักงานที่จะเปิดรายงานใบเสร็จน้ำมันจำแนกรายพนักงาน"));
+
+        $controller->generate($request, $response);
+
+        // Clean up static database connection instance
+        $property->setValue(null, null);
+    }
+
+    public function testGenerateReport11MissingDateRangeAlerts() {
+        $mockPdo = $this->createMock(\PDO::class);
+        $mockStmt = $this->createMock(\PDOStatement::class);
+        $mockStmt->method("execute")->willReturn(true);
+        $mockPdo->method("prepare")->willReturn($mockStmt);
+
+        // Inject mock PDO into Database
+        $reflection = new \ReflectionClass(\App\Core\Database::class);
+        $property = $reflection->getProperty("instance");
+        $property->setValue(null, $mockPdo);
+
+        $controller = new ReportController();
+
+        $request = $this->createMock(Request::class);
+        $request->method("getBody")->willReturn([
+            "report_type" => "11",
+            "employee_id" => "1",
+            "start_date" => "",
+            "end_date" => "",
+            "month" => "05",
+            "year" => "2026"
+        ]);
+
+        $response = $this->createMock(Response::class);
+        $response->expects($this->once())
+                 ->method("html")
+                 ->with($this->stringContains("กรุณาระบุช่วงวันที่"));
+
+        $controller->generate($request, $response);
+
+        // Clean up static database connection instance
+        $property->setValue(null, null);
+    }
+
+    public function testGenerateReport8ValidationWithInvalidDates() {
+        $mockPdo = $this->createMock(\PDO::class);
+        $mockStmt = $this->createMock(\PDOStatement::class);
+        $mockStmt->method('execute')->willReturn(true);
+        $mockPdo->method('prepare')->willReturn($mockStmt);
+        $mockPdo->method('lastInsertId')->willReturn('1');
+
+        $reflection = new \ReflectionClass(\App\Core\Database::class);
+        $property = $reflection->getProperty('instance');
+        $property->setValue(null, $mockPdo);
+
+        $controller = new ReportController();
+
+        $request = $this->createMock(Request::class);
+        $request->method('getBody')->willReturn([
+            'report_type' => '8',
+            'start_date' => '2026-06-16',
+            'end_date' => '2026-06-15'
+        ]);
+
+        $response = $this->createMock(Response::class);
+        $response->expects($this->once())
+                 ->method('redirect')
+                 ->with('/admin/reports');
+
+        $controller->generate($request, $response);
+
+        $this->assertEquals('วันที่เริ่มต้น ห้ามอยู่หลังวันที่สิ้นสุด', $_SESSION['report_error']);
+        unset($_SESSION['report_error']);
+
+        $property->setValue(null, null);
+    }
+
+    public function testGenerateReport8SameDayDateRangePermitted() {
+        $mockPdo = $this->createMock(\PDO::class);
+        $mockStmt = $this->createMock(\PDOStatement::class);
+        
+        $mockStmt->method('execute')->willReturn(true);
+        $mockStmt->method('fetchAll')->willReturn([]);
+        $mockStmt->method('fetchColumn')->willReturn('Test Footer');
+        
+        $mockPdo->method('prepare')->willReturn($mockStmt);
+        $mockPdo->method('query')->willReturn($mockStmt);
+        $mockPdo->method('lastInsertId')->willReturn('1');
+        
+        $reflection = new \ReflectionClass(\App\Core\Database::class);
+        $property = $reflection->getProperty('instance');
+        $property->setValue(null, $mockPdo);
+        
+        $controller = new ReportController();
+        
+        $request = $this->createMock(Request::class);
+        $request->method('getBody')->willReturn([
+            'report_type' => '8',
+            'start_date' => '2026-06-15',
+            'end_date' => '2026-06-15'
+        ]);
+        
+        $response = $this->createMock(Response::class);
+        $response->expects($this->never())->method('redirect');
+        $response->expects($this->never())->method('html');
+        
+        ob_start();
+        try {
+            $controller->generate($request, $response);
+        } catch (\Exception $e) {
+            // Ignore mPDF rendering errors in test environment if they occur
+        }
+        ob_end_clean();
+        
+        $property->setValue(null, null);
+    }
+
+    public function testGenerateReport9ValidationWithInvalidDates() {
+        $mockPdo = $this->createMock(\PDO::class);
+        $mockStmt = $this->createMock(\PDOStatement::class);
+        $mockStmt->method('execute')->willReturn(true);
+        $mockPdo->method('prepare')->willReturn($mockStmt);
+        $mockPdo->method('lastInsertId')->willReturn('1');
+
+        $reflection = new \ReflectionClass(\App\Core\Database::class);
+        $property = $reflection->getProperty('instance');
+        $property->setValue(null, $mockPdo);
+
+        $controller = new ReportController();
+
+        $request = $this->createMock(Request::class);
+        $request->method('getBody')->willReturn([
+            'report_type' => '9',
+            'start_date' => '2026-06-16',
+            'end_date' => '2026-06-15'
+        ]);
+
+        $response = $this->createMock(Response::class);
+        $response->expects($this->once())
+                 ->method('redirect')
+                 ->with('/admin/reports');
+
+        $controller->generate($request, $response);
+
+        $this->assertEquals('วันที่เริ่มต้น ห้ามอยู่หลังวันที่สิ้นสุด', $_SESSION['report_error']);
+        unset($_SESSION['report_error']);
+
+        $property->setValue(null, null);
+    }
+
+    public function testGenerateReport9SameDayDateRangePermitted() {
+        $mockPdo = $this->createMock(\PDO::class);
+        $mockStmt = $this->createMock(\PDOStatement::class);
+        
+        $mockStmt->method('execute')->willReturn(true);
+        $mockStmt->method('fetchAll')->willReturn([]);
+        $mockStmt->method('fetchColumn')->willReturn('Test Footer');
+        
+        $mockPdo->method('prepare')->willReturn($mockStmt);
+        $mockPdo->method('query')->willReturn($mockStmt);
+        $mockPdo->method('lastInsertId')->willReturn('1');
+        
+        $reflection = new \ReflectionClass(\App\Core\Database::class);
+        $property = $reflection->getProperty('instance');
+        $property->setValue(null, $mockPdo);
+        
+        $controller = new ReportController();
+        
+        $request = $this->createMock(Request::class);
+        $request->method('getBody')->willReturn([
+            'report_type' => '9',
+            'start_date' => '2026-06-15',
+            'end_date' => '2026-06-15'
+        ]);
+        
+        $response = $this->createMock(Response::class);
+        $response->expects($this->never())->method('redirect');
+        $response->expects($this->never())->method('html');
+        
+        ob_start();
+        try {
+            $controller->generate($request, $response);
+        } catch (\Exception $e) {
+            // Ignore mPDF rendering errors in test environment if they occur
+        }
+        ob_end_clean();
+        
+        $property->setValue(null, null);
+    }
+
+    public function testGenerateReport11ValidationWithInvalidDates() {
+        $mockPdo = $this->createMock(\PDO::class);
+        $mockStmt = $this->createMock(\PDOStatement::class);
+        $mockStmt->method('execute')->willReturn(true);
+        $mockPdo->method('prepare')->willReturn($mockStmt);
+        $mockPdo->method('lastInsertId')->willReturn('1');
+
+        $reflection = new \ReflectionClass(\App\Core\Database::class);
+        $property = $reflection->getProperty('instance');
+        $property->setValue(null, $mockPdo);
+
+        $controller = new ReportController();
+
+        $request = $this->createMock(Request::class);
+        $request->method('getBody')->willReturn([
+            'report_type' => '11',
+            'employee_id' => '1',
+            'start_date' => '2026-06-16',
+            'end_date' => '2026-06-15'
+        ]);
+
+        $response = $this->createMock(Response::class);
+        $response->expects($this->once())
+                 ->method('html')
+                 ->with($this->stringContains('วันที่เริ่มต้น ห้ามอยู่หลังวันที่สิ้นสุด!'));
+
+        $controller->generate($request, $response);
+
+        $property->setValue(null, null);
+    }
+
+    public function testGenerateReport11SameDayDateRangePermitted() {
+        $mockPdo = $this->createMock(\PDO::class);
+        $mockStmt = $this->createMock(\PDOStatement::class);
+        
+        $mockStmt->method('execute')->willReturn(true);
+        
+        // Simulating matching employee row, then empty receipts row
+        $mockStmt->method('fetch')->willReturn([
+            'id' => 1,
+            'full_name' => 'Somchai Jaidee',
+            'employee_code' => 'EMP001'
+        ]);
+        $mockStmt->method('fetchAll')->willReturn([]);
+        $mockStmt->method('fetchColumn')->willReturn('Test Footer');
+        
+        $mockPdo->method('prepare')->willReturn($mockStmt);
+        $mockPdo->method('query')->willReturn($mockStmt);
+        $mockPdo->method('lastInsertId')->willReturn('1');
+        
+        $reflection = new \ReflectionClass(\App\Core\Database::class);
+        $property = $reflection->getProperty('instance');
+        $property->setValue(null, $mockPdo);
+        
+        $controller = new ReportController();
+        
+        $request = $this->createMock(Request::class);
+        $request->method('getBody')->willReturn([
+            'report_type' => '11',
+            'employee_id' => '1',
+            'start_date' => '2026-06-15',
+            'end_date' => '2026-06-15'
+        ]);
+        
+        $response = $this->createMock(Response::class);
+        $response->expects($this->never())->method('redirect');
+        $response->expects($this->never())->method('html');
+        
+        ob_start();
+        try {
+            $controller->generate($request, $response);
+        } catch (\Exception $e) {
+            // Ignore mPDF rendering errors in test environment if they occur
+        }
+        ob_end_clean();
+        
+        $property->setValue(null, null);
+    }
 }
+
