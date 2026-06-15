@@ -12,7 +12,7 @@ use Exception;
 class AdminUserController {
     protected AdminUserRepositoryInterface $userRepo;
 
-    public function __construct(AdminUserRepositoryInterface $userRepo = null) {
+    public function __construct(?AdminUserRepositoryInterface $userRepo = null) {
         AuthMiddleware::checkAdmin();
         $this->userRepo = $userRepo ?: new \App\Repositories\MySQL\AdminUserRepository();
     }
