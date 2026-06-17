@@ -124,7 +124,7 @@ class Router {
         $layoutPath = dirname(__DIR__) . "/Views/layouts/{$layout}.php";
         if (file_exists($layoutPath)) {
             ob_start();
-            include_once $layoutPath;
+            include $layoutPath;
             return ob_get_clean();
         }
         return '{{content}}';
@@ -137,7 +137,7 @@ class Router {
         $viewPath = dirname(__DIR__) . "/Views/{$view}.php";
         if (file_exists($viewPath)) {
             ob_start();
-            include_once $viewPath;
+            include $viewPath;
             return ob_get_clean();
         }
         return "View file '{$view}' not found.";

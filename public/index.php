@@ -138,5 +138,21 @@ $router->post('/admin/history-import/travel/delete', [App\Controllers\Admin\Hist
 $router->get('/admin/line-helper', [App\Controllers\Admin\LineHelperController::class, 'index']);
 $router->post('/admin/line-helper/save', [App\Controllers\Admin\LineHelperController::class, 'save']);
 
-// Resolve router and render views
-$router->resolve();
+// 3.13 Discord Notifications Management
+$router->get('/admin/discord-settings', [App\Controllers\Admin\DiscordSettingsController::class, 'index']);
+$router->post('/admin/discord-settings/save', [App\Controllers\Admin\DiscordSettingsController::class, 'save']);
+
+// Resolve router and render views with system error logging
+try {
+    $router->resolve();
+} catch (\Throwable $e) {
+    // Notify Discord System Errors (Topic 9)
+    \App\Core\DiscordNotifier::sendSystemError($e);
+    
+    // Log error locally
+    error_log($e->getMessage() . "\n" . $e->getTraceAsString());
+    
+    // Render error page
+    $response->setStatusCode(500);
+    $router->renderView('error', ['message' => 'เกิดข้อผิดพลาดในการประมวลผลระบบ: ' . $e->getMessage()]);
+}

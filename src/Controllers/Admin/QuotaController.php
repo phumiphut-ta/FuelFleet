@@ -84,6 +84,15 @@ class QuotaController {
                 'new_value' => json_encode(['car_id' => $carId, 'license_plate' => $car['license_plate'] ?? '', 'monthly_quota' => $quota, 'effective_month' => $formattedMonth])
             ]);
 
+            // Discord notification for quota update
+            \App\Core\DiscordNotifier::sendSecurityAlert('Update quota', [
+                'license_plate' => $car['license_plate'] ?? '',
+                'monthly_quota' => $quota,
+                'effective_month' => date('m/Y', strtotime($formattedMonth)),
+                'admin_full_name' => $_SESSION['admin_user']['full_name'],
+                'admin_username' => $_SESSION['admin_user']['username']
+            ]);
+
             $_SESSION['quota_success'] = 'ปรับปรุงโควต้าน้ำมันและบันทึกประวัติโควต้าเวอร์ชันใหม่เรียบร้อยแล้ว';
         } catch (Exception $e) {
             $_SESSION['quota_error'] = 'เกิดข้อผิดพลาด: ' . $e->getMessage();

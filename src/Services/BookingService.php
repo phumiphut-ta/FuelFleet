@@ -44,6 +44,9 @@ class BookingService {
         }
 
         $bookingId = $this->bookingRepo->create($data, $provinces);
+        if ($bookingId) {
+            \App\Core\DiscordNotifier::sendNewBooking($bookingId);
+        }
         return [
             'success' => true,
             'booking_id' => $bookingId,
@@ -76,6 +79,7 @@ class BookingService {
 
         $this->bookingRepo->cancel($bookingId);
         $this->bookingRepo->addCancelLog($bookingId);
+        \App\Core\DiscordNotifier::sendCancelledBooking($bookingId, 'ผู้ใช้งานยกเลิกเอง', 'ผู้ใช้งาน');
 
         return [
             'success' => true,

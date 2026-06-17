@@ -43,6 +43,9 @@ class AuthController {
                 'role' => $user['role']
             ];
             
+            // Discord notification for admin login
+            \App\Core\DiscordNotifier::sendSecurityAlert('Login', $_SESSION['admin_user']);
+            
             // Add audit log for login
             $stmtLog = $db->prepare("
                 INSERT INTO audit_logs (user_id, username, action, table_name, record_id, new_value)
@@ -164,6 +167,12 @@ class AuthController {
             'username' => $_SESSION['admin_user']['username'],
             'record_id' => $userId,
             'new_value' => json_encode(['username' => $_SESSION['admin_user']['username'], 'status' => 'Success'])
+        ]);
+
+        // Discord notification for password change
+        \App\Core\DiscordNotifier::sendSecurityAlert('Change Password', [
+            'full_name' => $_SESSION['admin_user']['full_name'],
+            'username' => $_SESSION['admin_user']['username']
         ]);
 
         $_SESSION['pwd_success'] = 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว';

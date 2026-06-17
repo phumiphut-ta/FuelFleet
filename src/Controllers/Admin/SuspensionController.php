@@ -89,6 +89,9 @@ class SuspensionController {
                 'reason' => $reason,
                 'created_by' => $_SESSION['admin_user']['id']
             ]);
+            if ($suspensionId) {
+                \App\Core\DiscordNotifier::sendSuspensionCreated($suspensionId);
+            }
 
             // Audit Log
             $stmtLog = $db->prepare("
@@ -129,6 +132,7 @@ class SuspensionController {
 
         try {
             $this->suspensionRepo->cancel($id);
+            \App\Core\DiscordNotifier::sendSuspensionCancelled($id);
 
             // Audit Log
             $db = Database::getConnection();

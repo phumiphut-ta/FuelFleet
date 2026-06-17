@@ -246,6 +246,12 @@ class ReceiptController {
             ], $filePath);
 
             if ($result['success']) {
+                // Discord notifications
+                if ($filePath) {
+                    \App\Core\DiscordNotifier::sendReceiptPending($result['receipt_id']);
+                }
+                \App\Core\DiscordNotifier::checkAndSendQuotaAlerts($carId, date('Y-m', strtotime($receiptDate)));
+
                 // Log audit log
                 $db = Database::getConnection();
                 $stmtLog = $db->prepare("
@@ -285,6 +291,8 @@ class ReceiptController {
 
         try {
             $this->receiptRepo->updateStatus($id, 'Verified');
+            \App\Core\DiscordNotifier::sendReceiptVerificationResult($id, 'Approved', $_SESSION['admin_user']['full_name'] ?? 'ผู้ดูแลระบบ');
+            \App\Core\DiscordNotifier::checkAndSendQuotaAlerts($receipt['car_id'], date('Y-m', strtotime($receipt['receipt_date'])));
 
             // Audit Log
             $db = Database::getConnection();
@@ -316,6 +324,8 @@ class ReceiptController {
 
         try {
             $this->receiptRepo->updateStatus($id, 'Cancelled');
+            \App\Core\DiscordNotifier::sendReceiptVerificationResult($id, 'Rejected', $_SESSION['admin_user']['full_name'] ?? 'ผู้ดูแลระบบ');
+            \App\Core\DiscordNotifier::checkAndSendQuotaAlerts($receipt['car_id'], date('Y-m', strtotime($receipt['receipt_date'])));
 
             // Audit Log
             $db = Database::getConnection();
@@ -455,6 +465,14 @@ class ReceiptController {
             ], $filePath);
 
             if ($result['success']) {
+                // Discord alerts
+                if ($filePath) {
+                    \App\Core\DiscordNotifier::sendReceiptPending($id);
+                }
+                if ($status === 'Verified' || $receipt['status'] === 'Verified') {
+                    \App\Core\DiscordNotifier::checkAndSendQuotaAlerts($carId, date('Y-m', strtotime($receiptDate)));
+                }
+
                 // Log audit log
                 $stmtLog = $db->prepare("
                     INSERT INTO audit_logs (user_id, username, action, table_name, record_id, previous_value, new_value)

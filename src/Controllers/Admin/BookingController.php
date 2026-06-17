@@ -317,6 +317,7 @@ class BookingController {
         try {
             $this->bookingRepo->cancelWithReason($id, $reason);
             $this->bookingRepo->addCancelLog($id);
+            \App\Core\DiscordNotifier::sendCancelledBooking($id, $reason, $_SESSION['admin_user']['full_name'] ?? 'ผู้ดูแลระบบ');
 
             // Log audit log
             $db = Database::getConnection();
