@@ -47,12 +47,17 @@ class DiscordNotifier {
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
             'Content-Length: ' . strlen($payload)
         ]);
         curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Prevent blocking user execution
-        curl_exec($ch);
+        $response = curl_exec($ch);
+        if ($response === false) {
+            error_log('Discord Webhook Curl Error: ' . curl_error($ch));
+        }
         curl_close($ch);
     }
 
