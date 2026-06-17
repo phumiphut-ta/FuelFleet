@@ -109,10 +109,13 @@ class DiscordSettingsController {
             $db = Database::getConnection();
             $stmt = $db->prepare("
                 INSERT INTO system_settings (setting_key, setting_value, description)
-                VALUES ('discord_notification_settings', :val, 'โครงสร้างและการตั้งค่าการแจ้งเตือน Discord Webhook')
-                ON DUPLICATE KEY UPDATE setting_value = :val
+                VALUES ('discord_notification_settings', :val1, 'โครงสร้างและการตั้งค่าการแจ้งเตือน Discord Webhook')
+                ON DUPLICATE KEY UPDATE setting_value = :val2
             ");
-            $stmt->execute(['val' => $settingsJson]);
+            $stmt->execute([
+                'val1' => $settingsJson,
+                'val2' => $settingsJson
+            ]);
 
             $_SESSION['discord_success'] = 'บันทึกการตั้งค่าการแจ้งเตือน Discord Webhook เรียบร้อยแล้ว';
         } catch (Exception $e) {
