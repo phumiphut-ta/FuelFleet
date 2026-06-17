@@ -4,9 +4,11 @@ namespace App\Core;
 use PDO;
 use Exception;
 
-class DiscordNotifier {
+class DiscordNotifier
+{
     // Helper to get Discord configuration from system_settings
-    public static function getSettings(): array {
+    public static function getSettings(): array
+    {
         try {
             $db = Database::getConnection();
             $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'discord_notification_settings' LIMIT 1");
@@ -22,7 +24,8 @@ class DiscordNotifier {
     }
 
     // Helper to send message to Discord webhook
-    private static function sendToChannel(string $channelKey, string $topicKey, array $embed): void {
+    private static function sendToChannel(string $channelKey, string $topicKey, array $embed): void
+    {
         $settings = self::getSettings();
         $channelConfig = $settings['channels'][$channelKey] ?? null;
         if (!$channelConfig) {
@@ -61,12 +64,14 @@ class DiscordNotifier {
         curl_close($ch);
     }
 
-    private static function hexColor(string $hex): int {
+    private static function hexColor(string $hex): int
+    {
         return hexdec(str_replace('#', '', $hex));
     }
 
     // Topic 1: New Booking
-    public static function sendNewBooking(int $bookingId): void {
+    public static function sendNewBooking(int $bookingId): void
+    {
         try {
             $db = Database::getConnection();
             $stmt = $db->prepare("
@@ -78,7 +83,8 @@ class DiscordNotifier {
             ");
             $stmt->execute(['id' => $bookingId]);
             $booking = $stmt->fetch();
-            if (!$booking) return;
+            if (!$booking)
+                return;
 
             $stmtProv = $db->prepare("SELECT province_name FROM car_booking_provinces WHERE booking_id = :id");
             $stmtProv->execute(['id' => $bookingId]);
@@ -86,12 +92,12 @@ class DiscordNotifier {
             $provincesStr = implode(', ', $provinces);
 
             $embed = [
-                'title' => '📅 จองรถยนต์ราชการใหม่สำเร็จ',
-                'description' => 'มีคำขอจองรถคันใหม่รอการตรวจสอบและอนุมัติในระบบ',
+                'title' => '📅 จองรถยนต์สำเร็จ',
+                'description' => 'มีคำขอจองรถคันรอการตรวจสอบและอนุมัติในระบบ',
                 'color' => self::hexColor('#2ecc71'), // Green
                 'fields' => [
                     ['name' => '👤 ผู้ขอจอง', 'value' => $booking['employee_name'], 'inline' => true],
-                    ['name' => '🚗 ทะเบียนรถหลวง', 'value' => $booking['license_plate'] . ' (' . $booking['fuel_type'] . ')', 'inline' => true],
+                    ['name' => '🚗 ทะเบียนรถ', 'value' => $booking['license_plate'] . ' (' . $booking['fuel_type'] . ')', 'inline' => true],
                     ['name' => '📅 วันเวลาเดินทาง', 'value' => date('d/m/Y', strtotime($booking['start_time'])) . ' ถึง ' . date('d/m/Y', strtotime($booking['end_time'])), 'inline' => false],
                     ['name' => '📍 จังหวัดปลายทาง', 'value' => $provincesStr ?: 'ไม่ระบุ', 'inline' => false],
                     ['name' => '📝 วัตถุประสงค์', 'value' => $booking['purpose'], 'inline' => false],
@@ -106,7 +112,8 @@ class DiscordNotifier {
     }
 
     // Topic 2: Booking Cancelled
-    public static function sendCancelledBooking(int $bookingId, string $reason, string $cancelledBy = 'ผู้ใช้งาน'): void {
+    public static function sendCancelledBooking(int $bookingId, string $reason, string $cancelledBy = 'ผู้ใช้งาน'): void
+    {
         try {
             $db = Database::getConnection();
             $stmt = $db->prepare("
@@ -118,14 +125,15 @@ class DiscordNotifier {
             ");
             $stmt->execute(['id' => $bookingId]);
             $booking = $stmt->fetch();
-            if (!$booking) return;
+            if (!$booking)
+                return;
 
             $embed = [
-                'title' => '🚫 ยกเลิกการจองรถยนต์ราชการ',
+                'title' => '🚫 ยกเลิกการจองรถยนต์',
                 'color' => self::hexColor('#e67e22'), // Orange
                 'fields' => [
                     ['name' => '👤 ผู้ขอจอง', 'value' => $booking['employee_name'], 'inline' => true],
-                    ['name' => '🚗 ทะเบียนรถหลวง', 'value' => $booking['license_plate'], 'inline' => true],
+                    ['name' => '🚗 ทะเบียนรถ', 'value' => $booking['license_plate'], 'inline' => true],
                     ['name' => '📅 วันเวลาเดินทางเดิม', 'value' => date('d/m/Y', strtotime($booking['start_time'])) . ' ถึง ' . date('d/m/Y', strtotime($booking['end_time'])), 'inline' => false],
                     ['name' => '❌ ผู้ทำรายการยกเลิก', 'value' => $cancelledBy, 'inline' => true],
                     ['name' => '📝 เหตุผลในการยกเลิก', 'value' => $reason ?: 'ไม่ระบุเหตุผล', 'inline' => false]
@@ -140,7 +148,8 @@ class DiscordNotifier {
     }
 
     // Topic 3: Vehicle Suspension
-    public static function sendSuspensionCreated(int $suspensionId): void {
+    public static function sendSuspensionCreated(int $suspensionId): void
+    {
         try {
             $db = Database::getConnection();
             $stmt = $db->prepare("
@@ -152,11 +161,12 @@ class DiscordNotifier {
             ");
             $stmt->execute(['id' => $suspensionId]);
             $s = $stmt->fetch();
-            if (!$s) return;
+            if (!$s)
+                return;
 
             $embed = [
                 'title' => '🚫 ระงับการใช้งานรถยนต์ชั่วคราว',
-                'description' => 'ยานพาหนะหลวงถูกระงับการใช้งานชั่วคราวเนื่องจากเข้าซ่อมบำรุง',
+                'description' => 'ยานพาหนะถูกระงับการใช้งานชั่วคราว',
                 'color' => self::hexColor('#e74c3c'), // Red
                 'fields' => [
                     ['name' => '🚗 ทะเบียนรถ', 'value' => $s['license_plate'], 'inline' => true],
@@ -174,7 +184,8 @@ class DiscordNotifier {
     }
 
     // Topic 3 (part 2): Vehicle Suspension Cancelled (Reactivated)
-    public static function sendSuspensionCancelled(int $suspensionId): void {
+    public static function sendSuspensionCancelled(int $suspensionId): void
+    {
         try {
             $db = Database::getConnection();
             $stmt = $db->prepare("
@@ -185,11 +196,12 @@ class DiscordNotifier {
             ");
             $stmt->execute(['id' => $suspensionId]);
             $s = $stmt->fetch();
-            if (!$s) return;
+            if (!$s)
+                return;
 
             $embed = [
                 'title' => '✅ ปลดล็อกการใช้งานรถยนต์ปกติ',
-                'description' => 'ยานพาหนะหลวงถูกยกเลิกคำสั่งระงับ และนำกลับเข้าสู่สแตนด์บายการจองปกติ',
+                'description' => 'ยานพาหนะถูกยกเลิกคำสั่งระงับ และนำกลับเข้าสู่สแตนด์บายการจองปกติ',
                 'color' => self::hexColor('#2ecc71'), // Green
                 'fields' => [
                     ['name' => '🚗 ทะเบียนรถ', 'value' => $s['license_plate'], 'inline' => true],
@@ -205,23 +217,26 @@ class DiscordNotifier {
     }
 
     // Topic 4 & 5: Check and Send Quota Alerts
-    public static function checkAndSendQuotaAlerts(int $carId, string $yearMonth): void {
+    public static function checkAndSendQuotaAlerts(int $carId, string $yearMonth): void
+    {
         try {
             $quotaService = new \App\Services\QuotaService();
             $status = $quotaService->getCarQuotaStatus($carId, $yearMonth);
-            
+
             $db = Database::getConnection();
             $stmtCar = $db->prepare("SELECT license_plate, COALESCE(remaining_low_threshold, 20.00) AS threshold FROM car_detail WHERE id = :id");
             $stmtCar->execute(['id' => $carId]);
             $car = $stmtCar->fetch();
-            if (!$car) return;
+            if (!$car)
+                return;
 
             $quota = $status['quota_liters'];
             $used = $status['liters_used'];
             $remaining = $quota - $used;
-            $threshold = (float)$car['threshold'];
+            $threshold = (float) $car['threshold'];
 
-            if ($quota <= 0) return;
+            if ($quota <= 0)
+                return;
 
             $monthStr = date('m/Y', strtotime($yearMonth . '-01'));
 
@@ -265,7 +280,8 @@ class DiscordNotifier {
     }
 
     // Topic 6: Receipt Uploaded / Awaiting Verification
-    public static function sendReceiptPending(int $receiptId): void {
+    public static function sendReceiptPending(int $receiptId): void
+    {
         try {
             $db = Database::getConnection();
             $stmt = $db->prepare("
@@ -278,7 +294,8 @@ class DiscordNotifier {
             ");
             $stmt->execute(['id' => $receiptId]);
             $r = $stmt->fetch();
-            if (!$r) return;
+            if (!$r)
+                return;
 
             $embed = [
                 'title' => '🧾 มีใบเสร็จน้ำมันรอตรวจสอบและอนุมัติ',
@@ -300,7 +317,8 @@ class DiscordNotifier {
     }
 
     // Topic 7: Receipt Verification Result
-    public static function sendReceiptVerificationResult(int $receiptId, string $status, string $verifier): void {
+    public static function sendReceiptVerificationResult(int $receiptId, string $status, string $verifier): void
+    {
         try {
             $db = Database::getConnection();
             $stmt = $db->prepare("
@@ -312,7 +330,8 @@ class DiscordNotifier {
             ");
             $stmt->execute(['id' => $receiptId]);
             $r = $stmt->fetch();
-            if (!$r) return;
+            if (!$r)
+                return;
 
             $isApproved = $status === 'Approved';
 
@@ -335,7 +354,8 @@ class DiscordNotifier {
     }
 
     // Topic 8: Audit Logs & Security
-    public static function sendSecurityAlert(string $actionType, array $details): void {
+    public static function sendSecurityAlert(string $actionType, array $details): void
+    {
         try {
             $fields = [];
             $color = self::hexColor('#9b59b6'); // Purple
@@ -352,7 +372,7 @@ class DiscordNotifier {
                 $fields[] = ['name' => '🔒 ความปลอดภัยรหัส', 'value' => 'ผ่านการเข้ารหัสลับแฮช Bcrypt (Cost: 12) เรียบร้อย', 'inline' => false];
                 $color = self::hexColor('#e67e22');
             } elseif ($actionType === 'Update quota') {
-                $title = '⛽ มีการแก้ไขสิทธิ์โควต้าน้ำมันรถยนต์หลวง';
+                $title = '⛽ มีการแก้ไขสิทธิ์โควต้าน้ำมันรถยนต์';
                 $fields[] = ['name' => '🚗 ทะเบียนรถ', 'value' => $details['license_plate'], 'inline' => true];
                 $fields[] = ['name' => '⛽ โควต้าปรับใหม่', 'value' => number_format($details['monthly_quota'], 2) . ' ลิตร', 'inline' => true];
                 $fields[] = ['name' => '📅 เดือนที่มีผล', 'value' => $details['effective_month'], 'inline' => true];
@@ -377,7 +397,8 @@ class DiscordNotifier {
     }
 
     // Topic 9: System Errors
-    public static function sendSystemError(\Throwable $e): void {
+    public static function sendSystemError(\Throwable $e): void
+    {
         try {
             $embed = [
                 'title' => '🚨 ตรวจพบข้อผิดพลาดร้ายแรงของระบบ (System Error)',
