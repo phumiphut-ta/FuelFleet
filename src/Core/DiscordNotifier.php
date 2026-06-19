@@ -216,6 +216,106 @@ class DiscordNotifier
         }
     }
 
+    public static function getLineAnnouncementText(): string
+    {
+        try {
+            $db = Database::getConnection();
+            $currentMonthStart = date('Y-m-01');
+            $currentMonthEnd   = date('Y-m-t');
+
+            $carsData = $db->query("
+                SELECT
+                    c.id,
+                    c.license_plate,
+                    c.fuel_type,
+                    c.status,
+                    COALESCE(c.remaining_low_threshold, 20.00) AS threshold,
+                    COALESCE(q.monthly_quota, 0) AS quota_liters,
+                    COALESCE(SUM(r.liters), 0) AS used_liters
+                FROM car_detail c
+                LEFT JOIN car_quota_history q
+                    ON q.car_id = c.id
+                    AND q.id = (
+                        SELECT id FROM car_quota_history
+                        WHERE car_id = c.id
+                        ORDER BY effective_month DESC
+                        LIMIT 1
+                    )
+                LEFT JOIN gas_receipt r
+                    ON r.car_id = c.id
+                    AND r.status = 'Verified'
+                    AND r.receipt_date BETWEEN '{$currentMonthStart}' AND '{$currentMonthEnd}'
+                GROUP BY c.id, c.license_plate, c.fuel_type, c.status, c.remaining_low_threshold, q.monthly_quota
+                ORDER BY c.license_plate ASC
+            ")->fetchAll();
+
+            $lowQuotaCars = [];
+            foreach ($carsData as $car) {
+                $remaining = $car['quota_liters'] - $car['used_liters'];
+                if ($car['quota_liters'] > 0 && $remaining <= $car['threshold']) {
+                    $lowQuotaCars[] = $car;
+                }
+            }
+
+            $vehicleListLines = [];
+            foreach ($lowQuotaCars as $car) {
+                $remaining = $car['quota_liters'] - $car['used_liters'];
+                $usedFormatted = (float)$car['used_liters'];
+                $quotaFormatted = (float)$car['quota_liters'];
+                $remainingFormatted = (float)$remaining;
+                $vehicleListLines[] = "🚗 " . $car['license_plate'] . "\nใช้น้ำมันแล้ว: " . $usedFormatted . " / " . $quotaFormatted . " ลิตร (คงเหลือ: " . $remainingFormatted . " ลิตร)";
+            }
+            
+            if (empty($vehicleListLines)) {
+                $vehicleListString = "ไม่มีรถยนต์ที่ปริมาณน้ำมันคงเหลือต่ำกว่าเกณฑ์ในเดือนนี้";
+            } else {
+                $vehicleListString = implode("\n\n", $vehicleListLines);
+            }
+
+            $thaiShortMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            $thaiFullMonths = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+            
+            $day = (int)date('d');
+            $monthIndex = (int)date('n');
+            $year = (int)date('Y') + 543;
+            
+            $thaiDate = $day . ' ' . $thaiShortMonths[$monthIndex] . ' ' . $year;
+            $thaiMonthYear = $thaiFullMonths[$monthIndex] . ' ' . $year;
+
+            $templateStmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'line_announcement_template' LIMIT 1");
+            $templateStmt->execute();
+            $template = $templateStmt->fetchColumn();
+            
+            if (!$template) {
+                $template = "📢 อัปเดตโควต้าน้ำมันรถยนต์ส่วนกลาง (ประจำวันที่ {date})\n\n{vehicle_list}\n\n🛑 โปรดทราบ:\nหากมีการใช้งานน้ำมันเกินโควต้าที่กำหนด จะไม่สามารถเบิกใบเสร็จค่าน้ำมันส่วนที่เกินได้\nขอให้ทุกท่านระมัดระวังและวางแผนการเดินทางอย่างรอบคอบ";
+            }
+
+            $interpolatedMessage = str_replace(
+                ['{date}', '{month_year}', '{vehicle_list}'],
+                [$thaiDate, $thaiMonthYear, $vehicleListString],
+                $template
+            );
+
+            foreach ($carsData as $car) {
+                $plate = $car['license_plate'];
+                $usedVal = (float)$car['used_liters'];
+                $quotaVal = (float)$car['quota_liters'];
+                $remainingVal = (float)($car['quota_liters'] - $car['used_liters']);
+
+                $interpolatedMessage = str_replace(
+                    ["{used:$plate}", "{quota:$plate}", "{remaining:$plate}"],
+                    [$usedVal, $quotaVal, $remainingVal],
+                    $interpolatedMessage
+                );
+            }
+
+            $interpolatedMessage = preg_replace('/\{(used|quota|remaining):([^\}]+)\}/u', '(ไม่พบทะเบียนรถ: $2)', $interpolatedMessage);
+            return $interpolatedMessage;
+        } catch (\Throwable $e) {
+            return "เกิดข้อผิดพลาดในการสร้างข้อความตัวอย่าง: " . $e->getMessage();
+        }
+    }
+
     // Topic 4 & 5: Check and Send Quota Alerts
     public static function checkAndSendQuotaAlerts(int $carId, string $yearMonth): void
     {
@@ -224,7 +324,7 @@ class DiscordNotifier
             $status = $quotaService->getCarQuotaStatus($carId, $yearMonth);
 
             $db = Database::getConnection();
-            $stmtCar = $db->prepare("SELECT license_plate, COALESCE(remaining_low_threshold, 20.00) AS threshold FROM car_detail WHERE id = :id");
+            $stmtCar = $db->prepare("SELECT license_plate, COALESCE(remaining_low_threshold, 20.00) AS threshold, last_quota_alert_at FROM car_detail WHERE id = :id");
             $stmtCar->execute(['id' => $carId]);
             $car = $stmtCar->fetch();
             if (!$car)
@@ -239,6 +339,12 @@ class DiscordNotifier
                 return;
 
             $monthStr = date('m/Y', strtotime($yearMonth . '-01'));
+
+            if ($remaining > $threshold) {
+                // Reset last_quota_alert_at since we went back above threshold
+                $stmtReset = $db->prepare("UPDATE car_detail SET last_quota_alert_at = NULL WHERE id = :id");
+                $stmtReset->execute(['id' => $carId]);
+            }
 
             if ($used >= $quota) {
                 // Topic 5: Quota empty or over limit
@@ -258,21 +364,58 @@ class DiscordNotifier
                 ];
                 self::sendToChannel('fuel_quotas', 'quota_over', $embed);
             } elseif ($remaining <= $threshold) {
-                // Topic 4: Quota running low
-                $embed = [
-                    'title' => '⛽ แจ้งเตือน: โควต้าน้ำมันใกล้หมด',
-                    'description' => 'ปริมาณน้ำมันคงเหลือของยานพาหนะลดลงจนถึงเกณฑ์แจ้งเตือนลิตรคงเหลือต่ำสุด',
-                    'color' => self::hexColor('#f1c40f'), // Yellow
-                    'fields' => [
-                        ['name' => '🚗 ทะเบียนรถ', 'value' => $car['license_plate'], 'inline' => true],
-                        ['name' => '📅 ประจำเดือน', 'value' => $monthStr, 'inline' => true],
-                        ['name' => '⛽ โควต้าทั้งหมด (ลิตร)', 'value' => number_format($quota, 2), 'inline' => true],
-                        ['name' => '📈 เติมสะสมแล้ว (ลิตร)', 'value' => number_format($used, 2), 'inline' => true],
-                        ['name' => '📥 คงเหลือที่ใช้ได้ (ลิตร)', 'value' => number_format($remaining, 2) . ' ลิตร (เกณฑ์เตือน: ' . number_format($threshold, 2) . ' ลิตร)', 'inline' => false]
-                    ],
-                    'timestamp' => date('c')
-                ];
-                self::sendToChannel('fuel_quotas', 'quota_low', $embed);
+                // Fetch settings to check alert cycle
+                $settings = self::getSettings();
+                $channelConfig = $settings['channels']['fuel_quotas'] ?? null;
+                $cycle = $channelConfig['alert_cycle'] ?? 'always';
+                
+                $shouldAlert = false;
+                $lastAlertedAt = $car['last_quota_alert_at'];
+                
+                if ($lastAlertedAt === null) {
+                    $shouldAlert = true; // First time
+                } else {
+                    $lastAlertTime = strtotime($lastAlertedAt);
+                    $elapsed = time() - $lastAlertTime;
+                    
+                    if ($cycle === 'always') {
+                        $shouldAlert = true;
+                    } elseif ($cycle === '1hour' && $elapsed >= 3600) {
+                        $shouldAlert = true;
+                    } elseif ($cycle === '6hours' && $elapsed >= 21600) {
+                        $shouldAlert = true;
+                    } elseif ($cycle === '12hours' && $elapsed >= 43200) {
+                        $shouldAlert = true;
+                    } elseif ($cycle === '24hours' && $elapsed >= 86400) {
+                        $shouldAlert = true;
+                    }
+                }
+                
+                if ($shouldAlert) {
+                    // Update last_quota_alert_at to NOW()
+                    $stmtUpdate = $db->prepare("UPDATE car_detail SET last_quota_alert_at = NOW() WHERE id = :id");
+                    $stmtUpdate->execute(['id' => $carId]);
+
+                    // Generate Live Preview LINE announcement text
+                    $livePreviewMessage = self::getLineAnnouncementText();
+
+                    // Topic 4: Quota running low
+                    $embed = [
+                        'title' => '⛽ แจ้งเตือน: โควต้าน้ำมันใกล้หมด',
+                        'description' => 'ปริมาณน้ำมันคงเหลือของยานพาหนะลดลงจนถึงเกณฑ์แจ้งเตือนลิตรคงเหลือต่ำสุด',
+                        'color' => self::hexColor('#f1c40f'), // Yellow
+                        'fields' => [
+                            ['name' => '🚗 ทะเบียนรถ', 'value' => $car['license_plate'], 'inline' => true],
+                            ['name' => '📅 ประจำเดือน', 'value' => $monthStr, 'inline' => true],
+                            ['name' => '⛽ โควต้าทั้งหมด (ลิตร)', 'value' => number_format($quota, 2), 'inline' => true],
+                            ['name' => '📈 เติมสะสมแล้ว (ลิตร)', 'value' => number_format($used, 2), 'inline' => true],
+                            ['name' => '📥 คงเหลือที่ใช้ได้ (ลิตร)', 'value' => number_format($remaining, 2) . ' ลิตร (เกณฑ์เตือน: ' . number_format($threshold, 2) . ' ลิตร)', 'inline' => false],
+                            ['name' => '📋 ตัวอย่างข้อความแจ้งเตือนกลุ่ม LINE (Live Preview)', 'value' => '```' . $livePreviewMessage . '```', 'inline' => false]
+                        ],
+                        'timestamp' => date('c')
+                    ];
+                    self::sendToChannel('fuel_quotas', 'quota_low', $embed);
+                }
             }
         } catch (\Throwable $e) {
             // Do not break execution

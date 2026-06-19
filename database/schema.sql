@@ -96,6 +96,7 @@ CREATE TABLE car_detail (
     status VARCHAR(50) DEFAULT 'Active', -- Active, Suspended
     note TEXT NULL,
     remaining_low_threshold DECIMAL(10,2) DEFAULT 20.00,
+    last_quota_alert_at DATETIME NULL DEFAULT NULL,
     color VARCHAR(50) DEFAULT '#4f46e5',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

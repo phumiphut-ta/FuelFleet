@@ -34,7 +34,8 @@ class DiscordSettingsController {
                     ],
                     'fuel_quotas' => [
                         'webhook_url' => '',
-                        'topics' => ['quota_low' => '0', 'quota_over' => '0']
+                        'topics' => ['quota_low' => '0', 'quota_over' => '0'],
+                        'alert_cycle' => 'always'
                     ],
                     'receipt_approvals' => [
                         'webhook_url' => '',
@@ -84,7 +85,8 @@ class DiscordSettingsController {
                 'topics' => [
                     'quota_low' => $submittedChannels['fuel_quotas']['topics']['quota_low'] ?? '0',
                     'quota_over' => $submittedChannels['fuel_quotas']['topics']['quota_over'] ?? '0'
-                ]
+                ],
+                'alert_cycle' => $submittedChannels['fuel_quotas']['alert_cycle'] ?? 'always'
             ],
             'receipt_approvals' => [
                 'webhook_url' => trim($submittedChannels['receipt_approvals']['webhook_url'] ?? ''),

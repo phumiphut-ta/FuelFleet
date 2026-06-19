@@ -241,4 +241,167 @@ class DiscordNotifierTest extends TestCase {
         $this->assertTrue(true);
         $this->cleanMockPdo();
     }
+
+    public function testCheckAndSendQuotaAlertsFirstTime() {
+        $mockPdo = $this->createMock(PDO::class);
+        $mockStmtSettings = $this->createMock(PDOStatement::class);
+        $mockStmtSettings->method('execute')->willReturn(true);
+        $mockStmtSettings->method('fetchColumn')->willReturn(json_encode($this->fakeSettings));
+
+        $mockStmtCar = $this->createMock(PDOStatement::class);
+        $mockStmtCar->method('execute')->willReturn(true);
+        $mockStmtCar->method('fetch')->willReturn([
+            'license_plate' => 'กข-1234',
+            'threshold' => 20.00,
+            'last_quota_alert_at' => null,
+            'monthly_quota' => 100.00,
+            'total_liters' => 90.00
+        ]);
+
+        $mockStmtUpdate = $this->createMock(PDOStatement::class);
+        $mockStmtUpdate->method('execute')->willReturn(true);
+
+        $mockPdo->method('prepare')->willReturnCallback(function($sql) use ($mockStmtSettings, $mockStmtCar, $mockStmtUpdate) {
+            if (strpos($sql, 'discord_notification_settings') !== false) {
+                return $mockStmtSettings;
+            }
+            if (strpos($sql, 'UPDATE car_detail SET last_quota_alert_at') !== false) {
+                return $mockStmtUpdate;
+            }
+            return $mockStmtCar;
+        });
+
+        $this->injectMockPdo($mockPdo);
+        
+        $mockStmtQuery = $this->createMock(PDOStatement::class);
+        $mockStmtQuery->method('fetchAll')->willReturn([]);
+        $mockPdo->method('query')->willReturn($mockStmtQuery);
+
+        DiscordNotifier::checkAndSendQuotaAlerts(1, '2026-06');
+        $this->assertTrue(true);
+        $this->cleanMockPdo();
+    }
+
+    public function testCheckAndSendQuotaAlertsCycleThrottled() {
+        $mockPdo = $this->createMock(PDO::class);
+        
+        // 1hour cycle, last alert was 10 mins ago -> should NOT alert (no UPDATE executed)
+        $settings = $this->fakeSettings;
+        $settings['channels']['fuel_quotas']['alert_cycle'] = '1hour';
+
+        $mockStmtSettings = $this->createMock(PDOStatement::class);
+        $mockStmtSettings->method('execute')->willReturn(true);
+        $mockStmtSettings->method('fetchColumn')->willReturn(json_encode($settings));
+
+        $mockStmtCar = $this->createMock(PDOStatement::class);
+        $mockStmtCar->method('execute')->willReturn(true);
+        $mockStmtCar->method('fetch')->willReturn([
+            'license_plate' => 'กข-1234',
+            'threshold' => 20.00,
+            'last_quota_alert_at' => date('Y-m-d H:i:s', time() - 600), // 10 mins ago
+            'monthly_quota' => 100.00,
+            'total_liters' => 90.00
+        ]);
+
+        $mockStmtUpdate = $this->createMock(PDOStatement::class);
+        // We expect UPDATE should NOT be called since it is throttled
+        $mockStmtUpdate->expects($this->never())->method('execute');
+
+        $mockPdo->method('prepare')->willReturnCallback(function($sql) use ($mockStmtSettings, $mockStmtCar, $mockStmtUpdate) {
+            if (strpos($sql, 'discord_notification_settings') !== false) {
+                return $mockStmtSettings;
+            }
+            if (strpos($sql, 'UPDATE car_detail SET last_quota_alert_at') !== false) {
+                return $mockStmtUpdate;
+            }
+            return $mockStmtCar;
+        });
+
+        $this->injectMockPdo($mockPdo);
+        
+        $mockStmtQuery = $this->createMock(PDOStatement::class);
+        $mockStmtQuery->method('fetchAll')->willReturn([]);
+        $mockPdo->method('query')->willReturn($mockStmtQuery);
+
+        DiscordNotifier::checkAndSendQuotaAlerts(1, '2026-06');
+        $this->cleanMockPdo();
+    }
+
+    public function testCheckAndSendQuotaAlertsCycleTriggered() {
+        $mockPdo = $this->createMock(PDO::class);
+        
+        // 1hour cycle, last alert was 61 mins ago -> should alert (UPDATE executed)
+        $settings = $this->fakeSettings;
+        $settings['channels']['fuel_quotas']['alert_cycle'] = '1hour';
+
+        $mockStmtSettings = $this->createMock(PDOStatement::class);
+        $mockStmtSettings->method('execute')->willReturn(true);
+        $mockStmtSettings->method('fetchColumn')->willReturn(json_encode($settings));
+
+        $mockStmtCar = $this->createMock(PDOStatement::class);
+        $mockStmtCar->method('execute')->willReturn(true);
+        $mockStmtCar->method('fetch')->willReturn([
+            'license_plate' => 'กข-1234',
+            'threshold' => 20.00,
+            'last_quota_alert_at' => date('Y-m-d H:i:s', time() - 3660), // 61 mins ago
+            'monthly_quota' => 100.00,
+            'total_liters' => 90.00
+        ]);
+
+        $mockStmtUpdate = $this->createMock(PDOStatement::class);
+        $mockStmtUpdate->expects($this->once())->method('execute')->willReturn(true);
+
+        $mockPdo->method('prepare')->willReturnCallback(function($sql) use ($mockStmtSettings, $mockStmtCar, $mockStmtUpdate) {
+            if (strpos($sql, 'discord_notification_settings') !== false) {
+                return $mockStmtSettings;
+            }
+            if (strpos($sql, 'UPDATE car_detail SET last_quota_alert_at') !== false) {
+                return $mockStmtUpdate;
+            }
+            return $mockStmtCar;
+        });
+
+        $this->injectMockPdo($mockPdo);
+        
+        $mockStmtQuery = $this->createMock(PDOStatement::class);
+        $mockStmtQuery->method('fetchAll')->willReturn([]);
+        $mockPdo->method('query')->willReturn($mockStmtQuery);
+
+        DiscordNotifier::checkAndSendQuotaAlerts(1, '2026-06');
+        $this->cleanMockPdo();
+    }
+
+    public function testCheckAndSendQuotaAlertsResetAboveThreshold() {
+        $mockPdo = $this->createMock(PDO::class);
+        
+        // Remaining fuel > threshold -> should reset last_quota_alert_at to NULL
+        $mockStmtCar = $this->createMock(PDOStatement::class);
+        $mockStmtCar->method('execute')->willReturn(true);
+        $mockStmtCar->method('fetch')->willReturn([
+            'license_plate' => 'กข-1234',
+            'threshold' => 20.00,
+            'last_quota_alert_at' => date('Y-m-d H:i:s'),
+            'monthly_quota' => 100.00,
+            'total_liters' => 50.00 // 50 remaining, > 20 threshold
+        ]);
+
+        $mockStmtReset = $this->createMock(PDOStatement::class);
+        $mockStmtReset->expects($this->once())->method('execute')->willReturn(true);
+
+        $mockPdo->method('prepare')->willReturnCallback(function($sql) use ($mockStmtCar, $mockStmtReset) {
+            if (strpos($sql, 'UPDATE car_detail SET last_quota_alert_at = NULL') !== false) {
+                return $mockStmtReset;
+            }
+            return $mockStmtCar;
+        });
+
+        $this->injectMockPdo($mockPdo);
+        
+        $mockStmtQuery = $this->createMock(PDOStatement::class);
+        $mockStmtQuery->method('fetchAll')->willReturn([]);
+        $mockPdo->method('query')->willReturn($mockStmtQuery);
+
+        DiscordNotifier::checkAndSendQuotaAlerts(1, '2026-06');
+        $this->cleanMockPdo();
+    }
 }

@@ -169,6 +169,16 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="border-t border-slate-850/60 pt-3 space-y-1.5">
+                            <label class="block text-[10px] font-semibold text-slate-400">รอบเวลาการแจ้งเตือนซ้ำ (สำหรับโควต้าน้ำมันใกล้หมด)</label>
+                            <select name="channels[fuel_quotas][alert_cycle]" class="block w-full px-2 py-1.5 border border-slate-800 bg-slate-950/60 rounded-xl text-[10px] text-slate-300 focus:outline-none focus:ring-1 focus:ring-amber-500">
+                                <option value="always" <?= ($settings['channels']['fuel_quotas']['alert_cycle'] ?? 'always') === 'always' ? 'selected' : '' ?>>แจ้งเตือนทุกครั้งที่มีการบันทึกใบเสร็จ</option>
+                                <option value="1hour" <?= ($settings['channels']['fuel_quotas']['alert_cycle'] ?? 'always') === '1hour' ? 'selected' : '' ?>>แจ้งเตือนซ้ำห่างกันอย่างน้อย 1 ชั่วโมง</option>
+                                <option value="6hours" <?= ($settings['channels']['fuel_quotas']['alert_cycle'] ?? 'always') === '6hours' ? 'selected' : '' ?>>แจ้งเตือนซ้ำห่างกันอย่างน้อย 6 ชั่วโมง</option>
+                                <option value="12hours" <?= ($settings['channels']['fuel_quotas']['alert_cycle'] ?? 'always') === '12hours' ? 'selected' : '' ?>>แจ้งเตือนซ้ำห่างกันอย่างน้อย 12 ชั่วโมง</option>
+                                <option value="24hours" <?= ($settings['channels']['fuel_quotas']['alert_cycle'] ?? 'always') === '24hours' ? 'selected' : '' ?>>แจ้งเตือนซ้ำห่างกันอย่างน้อย 24 ชั่วโมง (วันละครั้ง)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
