@@ -264,10 +264,8 @@
                         <tr class="text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800">
                             <th class="text-left py-2.5 pr-4 font-semibold">ทะเบียนรถ</th>
                             <th class="text-left py-2.5 pr-4 font-semibold">ประเภทน้ำมัน</th>
-                            <th class="text-right py-2.5 pr-4 font-semibold">โควต้า (ลิตร)</th>
-                            <th class="text-right py-2.5 pr-4 font-semibold">ใช้ไป (ลิตร)</th>
-                            <th class="text-right py-2.5 pr-4 font-semibold">คงเหลือ (ลิตร)</th>
-                            <th class="py-2.5 font-semibold">สถานะ</th>
+                            <th class="text-right py-2.5 pr-4 font-semibold">การใช้น้ำมัน (ใช้ไป / โควต้า)</th>
+                            <th class="py-2.5 font-semibold pl-4">สถานะ</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800/40">
@@ -298,10 +296,13 @@
                         <tr class="hover:bg-slate-800/20 transition">
                             <td class="py-3 pr-4 font-bold text-white"><?= htmlspecialchars($q['license_plate']) ?></td>
                             <td class="py-3 pr-4 text-slate-400"><?= htmlspecialchars($q['fuel_type']) ?></td>
-                            <td class="py-3 pr-4 text-right"><?= number_format($q['quota_liters'], 2) ?></td>
-                            <td class="py-3 pr-4 text-right font-semibold text-slate-200"><?= number_format($q['used_liters'], 2) ?></td>
-                            <td class="py-3 pr-4 text-right font-bold <?= $textColor ?>"><?= number_format($q['remaining_liters'], 2) ?></td>
-                            <td class="py-3">
+                            <td class="py-3 pr-4 text-right">
+                                <span class="text-slate-200 font-semibold"><?= number_format($q['used_liters'], 2) ?></span>
+                                <span class="text-slate-500">/</span>
+                                <span class="text-slate-400"><?= number_format($q['quota_liters'], 2) ?> ลิตร</span>
+                                <span class="text-[10px] text-slate-500 font-normal ml-1.5">(คงเหลือ <span class="font-bold <?= $textColor ?>"><?= number_format($q['remaining_liters'], 2) ?></span> ลิตร)</span>
+                            </td>
+                            <td class="py-3 pl-4">
                                 <div class="flex items-center gap-2.5">
                                     <div class="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden min-w-[80px]">
                                         <div class="h-full rounded-full <?= $barColor ?> transition-all" style="width: <?= $pctCapped ?>%"></div>
@@ -315,9 +316,17 @@
                     <tfoot>
                         <tr class="border-t-2 border-slate-700 font-bold text-white bg-slate-800/20">
                             <td class="py-3 pr-4" colspan="2">รวมทั้งหมด</td>
-                            <td class="py-3 pr-4 text-right"><?= number_format(array_sum(array_column($quotaStats, 'quota_liters')), 2) ?></td>
-                            <td class="py-3 pr-4 text-right"><?= number_format(array_sum(array_column($quotaStats, 'used_liters')), 2) ?></td>
-                            <td class="py-3 pr-4 text-right text-emerald-400"><?= number_format(array_sum(array_column($quotaStats, 'remaining_liters')), 2) ?></td>
+                            <?php 
+                            $totalQuota = array_sum(array_column($quotaStats, 'quota_liters'));
+                            $totalUsed = array_sum(array_column($quotaStats, 'used_liters'));
+                            $totalRemaining = array_sum(array_column($quotaStats, 'remaining_liters'));
+                            ?>
+                            <td class="py-3 pr-4 text-right">
+                                <span class="text-slate-200"><?= number_format($totalUsed, 2) ?></span>
+                                <span class="text-slate-500">/</span>
+                                <span class="text-slate-400"><?= number_format($totalQuota, 2) ?> ลิตร</span>
+                                <span class="text-[10px] text-slate-450 font-normal ml-1.5">(คงเหลือ <span class="font-bold text-emerald-400"><?= number_format($totalRemaining, 2) ?></span> ลิตร)</span>
+                            </td>
                             <td class="py-3"></td>
                         </tr>
                     </tfoot>
