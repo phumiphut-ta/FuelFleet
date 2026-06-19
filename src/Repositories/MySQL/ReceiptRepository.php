@@ -40,7 +40,7 @@ class ReceiptRepository implements ReceiptRepositoryInterface {
     }
 
     public function findByReceiptNumber(string $receiptNumber): ?array {
-        $stmt = $this->db->prepare("SELECT * FROM gas_receipt WHERE receipt_number = :receipt_number");
+        $stmt = $this->db->prepare("SELECT * FROM gas_receipt WHERE receipt_number = :receipt_number AND status != 'Cancelled'");
         $stmt->execute(['receipt_number' => $receiptNumber]);
         $result = $stmt->fetch();
         return $result ?: null;
