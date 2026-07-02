@@ -545,9 +545,10 @@ class ReportController {
                 $car = $stmtCar->fetch();
 
                 $stmtReceipts = $db->prepare("
-                    SELECT r.*, e.full_name AS employee_name, a.file_path
+                    SELECT r.*, e.full_name AS employee_name, c.fuel_type, a.file_path
                     FROM gas_receipt r
                     LEFT JOIN employee e ON r.employee_id = e.id
+                    LEFT JOIN car_detail c ON r.car_id = c.id
                     LEFT JOIN receipt_attachment a ON a.receipt_id = r.id
                     WHERE r.car_id = :carId AND r.status != 'Cancelled' AND DATE_FORMAT(r.receipt_date, '%m-%Y') = :monthYear
                     ORDER BY r.receipt_date ASC
@@ -1238,7 +1239,7 @@ class ReportController {
                 $stmtEmp->execute(['id' => $employeeId]);
                 $employee = $stmtEmp->fetch();
                 $stmtReceipts = $db->prepare("
-                    SELECT r.*, c.license_plate, a.file_path
+                    SELECT r.*, c.license_plate, c.fuel_type, a.file_path
                     FROM gas_receipt r
                     LEFT JOIN car_detail c ON r.car_id = c.id
                     LEFT JOIN receipt_attachment a ON a.receipt_id = r.id
