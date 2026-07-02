@@ -5,6 +5,7 @@
     "require": {
         "php": ">=8.3",
         "mpdf/mpdf": "^8.2",
+        "mpdf/qrcode": "^1.2",
         "phpoffice/phpspreadsheet": "^2.1"
     },
     "require-dev": {

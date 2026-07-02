@@ -655,15 +655,25 @@ class ReportController {
                                                 </tr>
                                             </table>
                                             
-                                            <div style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; background-color: #ffffff; text-align: center;">
-                                                <div style="font-size: 35px; margin-bottom: 10px; color: #ef4444;">📄</div>
-                                                <h3 style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 0 0 8px 0;">หลักฐานแนบเป็นรูปแบบเอกสาร PDF</h3>
-                                                <p style="font-size: 10px; color: #475569; line-height: 1.5; margin: 0 auto 15px auto; width: 85%;">
-                                                    เนื่องจากข้อมูลใบเสร็จได้รับการบันทึกในรูปแบบไฟล์เอกสาร PDF ระบบจึงได้แปลงและจัดทำใบรับรองใบสําคัญฉบับนี้เข้าเป็นส่วนหนึ่งของรายงานการตรวจสอบอย่างเป็นทางการ
-                                                </p>
-                                                <div style="font-weight: bold; font-size: 11px;">
-                                                    <a href="' . htmlspecialchars(Request::getBasePath() . $r['file_path']) . '" target="_blank" style="text-decoration: underline; color: #2563eb;">คลิกลิงก์เพื่อเปิดดูหรือดาวน์โหลดไฟล์ PDF ต้นฉบับ</a>
-                                                </div>
+                                            <div style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; background-color: #ffffff;">
+                                                <table style="width: 100%; border-collapse: collapse;">
+                                                    <tr>
+                                                        <td style="width: 75%; text-align: left; vertical-align: middle; padding-right: 15px;">
+                                                            <div style="font-size: 35px; margin-bottom: 10px; color: #ef4444;">📄</div>
+                                                            <h3 style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 0 0 8px 0;">หลักฐานแนบเป็นรูปแบบเอกสาร PDF</h3>
+                                                            <p style="font-size: 10px; color: #475569; line-height: 1.5; margin: 0 0 15px 0;">
+                                                                เนื่องจากข้อมูลใบเสร็จได้รับการบันทึกในรูปแบบไฟล์เอกสาร PDF ระบบจึงได้แปลงและจัดทำใบรับรองใบสําคัญฉบับนี้เข้าเป็นส่วนหนึ่งของรายงานการตรวจสอบอย่างเป็นทางการ
+                                                            </p>
+                                                            <div style="font-weight: bold; font-size: 11px;">
+                                                                <a href="' . htmlspecialchars(Request::getBasePath() . $r['file_path']) . '" target="_blank" style="text-decoration: underline; color: #2563eb;">คลิกลิงก์เพื่อเปิดดูหรือดาวน์โหลดไฟล์ PDF ต้นฉบับ</a>
+                                                            </div>
+                                                        </td>
+                                                        <td style="width: 25%; text-align: center; vertical-align: middle; border-left: 1px dashed #cbd5e1; padding-left: 15px;">
+                                                            <barcode code="' . htmlspecialchars(((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? '') == 443) ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost') . Request::getBasePath() . $r['file_path']) . '" type="QR" class="barcode" size="1.0" error="M" />
+                                                            <div style="font-size: 9px; color: #64748b; margin-top: 8px; font-weight: bold; line-height: 1.2;">สแกนเพื่อดูไฟล์ PDF<br/>Scan to View</div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
                                             </div>
                                         </div>
                                     ';
@@ -1351,15 +1361,25 @@ class ReportController {
                                                 </tr>
                                             </table>
                                             
-                                            <div style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; background-color: #ffffff; text-align: center;">
-                                                <div style="font-size: 35px; margin-bottom: 10px; color: #ef4444;">📄</div>
-                                                <h3 style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 0 0 8px 0;">หลักฐานแนบเป็นรูปแบบเอกสาร PDF</h3>
-                                                <p style="font-size: 10px; color: #475569; line-height: 1.5; margin: 0 auto 15px auto; width: 85%;">
-                                                    เนื่องจากข้อมูลใบเสร็จได้รับการบันทึกในรูปแบบไฟล์เอกสาร PDF ระบบจึงได้แปลงและจัดทำใบรับรองใบสําคัญฉบับนี้เข้าเป็นส่วนหนึ่งของรายงานการตรวจสอบอย่างเป็นทางการ
-                                                </p>
-                                                <div style="font-weight: bold; font-size: 11px;">
-                                                    <a href="' . htmlspecialchars(Request::getBasePath() . $r['file_path']) . '" target="_blank" style="text-decoration: underline; color: #2563eb;">คลิกลิงก์เพื่อเปิดดูหรือดาวน์โหลดไฟล์ PDF ต้นฉบับ</a>
-                                                </div>
+                                            <div style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; background-color: #ffffff;">
+                                                <table style="width: 100%; border-collapse: collapse;">
+                                                    <tr>
+                                                        <td style="width: 75%; text-align: left; vertical-align: middle; padding-right: 15px;">
+                                                            <div style="font-size: 35px; margin-bottom: 10px; color: #ef4444;">📄</div>
+                                                            <h3 style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 0 0 8px 0;">หลักฐานแนบเป็นรูปแบบเอกสาร PDF</h3>
+                                                            <p style="font-size: 10px; color: #475569; line-height: 1.5; margin: 0 0 15px 0;">
+                                                                เนื่องจากข้อมูลใบเสร็จได้รับการบันทึกในรูปแบบไฟล์เอกสาร PDF ระบบจึงได้แปลงและจัดทำใบรับรองใบสําคัญฉบับนี้เข้าเป็นส่วนหนึ่งของรายงานการตรวจสอบอย่างเป็นทางการ
+                                                            </p>
+                                                            <div style="font-weight: bold; font-size: 11px;">
+                                                                <a href="' . htmlspecialchars(Request::getBasePath() . $r['file_path']) . '" target="_blank" style="text-decoration: underline; color: #2563eb;">คลิกลิงก์เพื่อเปิดดูหรือดาวน์โหลดไฟล์ PDF ต้นฉบับ</a>
+                                                            </div>
+                                                        </td>
+                                                        <td style="width: 25%; text-align: center; vertical-align: middle; border-left: 1px dashed #cbd5e1; padding-left: 15px;">
+                                                            <barcode code="' . htmlspecialchars(((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? '') == 443) ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost') . Request::getBasePath() . $r['file_path']) . '" type="QR" class="barcode" size="1.0" error="M" />
+                                                            <div style="font-size: 9px; color: #64748b; margin-top: 8px; font-weight: bold; line-height: 1.2;">สแกนเพื่อดูไฟล์ PDF<br/>Scan to View</div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
                                             </div>
                                         </div>
                                     ';
