@@ -38,3 +38,13 @@ When designing route validation rules:
 - **Exempt API Paths**: All POST endpoints starting with `/api/` (such as `/api/receipts/save-mobile`) must bypass session-based CSRF token validation in `Router::resolve()`. 
 - **Alternative Security**: These stateless API endpoints are authenticated using secure temporary tokens in request parameters (which are immune to CSRF because attackers cannot forge token query parameter values).
 
+## 4. Static Singleton Mocking and Clean-up in Unit Tests
+When mocking global singletons or classes with static state (such as the connection property in `\App\Core\Database` via Reflection):
+
+- **Mandatory Reversion**: You **must** reset the modified static property back to its default state (usually `null`) at the end of the test execution (inside a `try...finally` block or inside the test's `tearDown()` method):
+  ```php
+  $property->setValue(null, null); // Clean up static state
+  ```
+- **Reason**: Because PHPUnit runs tests sequentially within a single persistent process, un-reverted static properties will leak to subsequent test cases, causing random, hard-to-debug failures in unrelated tests.
+
+
