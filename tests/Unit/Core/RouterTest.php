@@ -71,4 +71,23 @@ class RouterTest extends TestCase {
         $router->resolve();
         $this->assertTrue($called);
     }
+
+    public function testResolveApiPostRequestBypassesCsrf() {
+        $request = $this->createMock(Request::class);
+        $request->method('getPath')->willReturn('/api/receipts/save-mobile');
+        $request->method('getMethod')->willReturn('POST');
+
+        $response = $this->createMock(Response::class);
+        $response->expects($this->never())->method('setStatusCode');
+
+        $router = new Router($request, $response);
+        $called = false;
+        $router->post('/api/receipts/save-mobile', function() use (&$called) {
+            $called = true;
+            return 'success';
+        });
+
+        $router->resolve();
+        $this->assertTrue($called);
+    }
 }

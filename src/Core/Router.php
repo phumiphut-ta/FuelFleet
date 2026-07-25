@@ -28,8 +28,8 @@ class Router {
             $path = rtrim($path, '/');
         }
 
-        // Validate CSRF for POST requests
-        if ($method === 'POST') {
+        // Validate CSRF for POST requests (except API routes)
+        if ($method === 'POST' && !str_starts_with($path, '/api/')) {
             $token = $_POST['csrf_token'] ?? null;
             if (!\App\Core\Csrf::validateToken($token)) {
                 $this->response->setStatusCode(403);
