@@ -24,3 +24,17 @@ When implementing redirects or generating URLs for different contexts:
     ```javascript
     fetch('<?= \App\Core\Request::getBasePath() ?>/api/endpoint')
     ```
+
+## 2. Robust API JSON Responses and Error Prevention
+When writing controller methods that respond with JSON (`$response->json(...)`):
+
+- **Catch `\Throwable`**: Always catch `\Throwable` rather than `\Exception` to ensure that any PHP type errors, compiler errors, or PDO errors are caught and returned as JSON, preventing HTML 500 pages from being returned.
+- **Validate Directory Writability**: Always check write permissions using `is_writable()` before attempting file operations to return a clean, helpful JSON error.
+- **Suppress PHP Warning Pollution**: Prepend `@` to native filesystem functions (e.g., `@mkdir`, `@move_uploaded_file`) to prevent PHP from writing HTML warnings into the output buffer, which corrupts JSON outputs.
+
+## 3. CSRF Verification Exemption for API POST Routes
+When designing route validation rules:
+
+- **Exempt API Paths**: All POST endpoints starting with `/api/` (such as `/api/receipts/save-mobile`) must bypass session-based CSRF token validation in `Router::resolve()`. 
+- **Alternative Security**: These stateless API endpoints are authenticated using secure temporary tokens in request parameters (which are immune to CSRF because attackers cannot forge token query parameter values).
+
