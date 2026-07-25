@@ -6,6 +6,7 @@ use App\Core\Response;
 use App\Core\Router;
 use App\Core\Database;
 use Exception;
+use Throwable;
 
 class MobileUploadController {
     
@@ -25,7 +26,7 @@ class MobileUploadController {
                 if ($tokenRecord) {
                     $isValid = true;
                 }
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 $dbError = $e->getMessage();
             }
         }
@@ -68,7 +69,7 @@ class MobileUploadController {
                     'uploaded' => false
                 ]);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $response->json([
                 'success' => false,
                 'message' => 'Database error: ' . $e->getMessage()
@@ -118,13 +119,20 @@ class MobileUploadController {
             
             $uploadDir = dirname(__DIR__, 3) . '/public/uploads/';
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+                @mkdir($uploadDir, 0777, true);
+            }
+            
+            if (!is_writable($uploadDir)) {
+                return $response->json([
+                    'success' => false,
+                    'message' => 'Upload directory is not writable. Please check directory permissions (e.g. chmod 777 public/uploads).'
+                ]);
             }
             
             $newFilename = 'mobile_receipt_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $fileExtension;
             $destPath = $uploadDir . $newFilename;
             
-            if (move_uploaded_file($fileTmpPath, $destPath)) {
+            if (@move_uploaded_file($fileTmpPath, $destPath)) {
                 $stmtUpdate = $db->prepare("UPDATE temporary_tokens SET uploaded_file = :filename WHERE token = :token");
                 $stmtUpdate->execute(['filename' => $newFilename, 'token' => $token]);
                 
@@ -135,7 +143,7 @@ class MobileUploadController {
             } else {
                 return $response->json(['success' => false, 'message' => 'Failed to save uploaded file']);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $response->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
