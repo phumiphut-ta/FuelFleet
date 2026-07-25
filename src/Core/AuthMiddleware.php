@@ -15,7 +15,8 @@ class AuthMiddleware {
             session_start();
         }
         if (!isset($_SESSION['admin_user'])) {
-            header("Location: /admin/login");
+            $basePath = Request::getBasePath();
+            header("Location: " . $basePath . "/admin/login");
             exit;
         }
     }
