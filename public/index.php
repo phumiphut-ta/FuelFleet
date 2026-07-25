@@ -36,6 +36,9 @@ $router->post('/booking/cancel', [App\Controllers\Public\BookingController::clas
 $router->get('/heatmap', [App\Controllers\Public\CalendarController::class, 'heatmap']);
 $router->get('/receipts/recent', [App\Controllers\Public\BookingController::class, 'recentReceipts']);
 $router->get('/liff/quotas', [App\Controllers\Public\LiffController::class, 'quotas']);
+$router->get('/mobile/receipt/upload', [App\Controllers\Public\MobileUploadController::class, 'showUploadForm']);
+$router->get('/api/receipts/check-token', [App\Controllers\Public\MobileUploadController::class, 'checkToken']);
+$router->post('/api/receipts/save-mobile', [App\Controllers\Public\MobileUploadController::class, 'saveUpload']);
 
 // ==========================================
 // 2. ADMIN AUTH ROUTES
@@ -96,6 +99,7 @@ $router->post('/admin/receipts/verify/{id}', [App\Controllers\Admin\ReceiptContr
 $router->post('/admin/receipts/cancel/{id}', [App\Controllers\Admin\ReceiptController::class, 'cancel']);
 $router->get('/admin/receipts/edit/{id}', [App\Controllers\Admin\ReceiptController::class, 'edit']);
 $router->post('/admin/receipts/update/{id}', [App\Controllers\Admin\ReceiptController::class, 'update']);
+$router->get('/admin/receipts/generate-token', [App\Controllers\Admin\ReceiptController::class, 'generateToken']);
 
 // 3.6 Reports Center
 $router->get('/admin/reports', [App\Controllers\Admin\ReportController::class, 'index']);

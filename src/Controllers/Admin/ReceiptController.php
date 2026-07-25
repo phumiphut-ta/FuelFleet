@@ -193,8 +193,19 @@ class ReceiptController {
 
             $filePath = null;
 
-            // Handle file upload
-            if (isset($files['receipt_image'])) {
+            // Check if temporary uploaded file via QR Code was submitted
+            $tempImage = trim($body['temp_receipt_image'] ?? '');
+            if (!empty($tempImage)) {
+                $tempImage = basename($tempImage);
+                $uploadDir = dirname(__DIR__, 3) . '/public/uploads/';
+                if (file_exists($uploadDir . $tempImage)) {
+                    $filePath = '/uploads/' . $tempImage;
+                } else {
+                    throw new Exception("ไม่พบไฟล์แนบชั่วคราวในระบบ กรุณาลองอัปโหลดใหม่อีกครั้ง");
+                }
+            }
+            // Handle standard file upload
+            elseif (isset($files['receipt_image'])) {
                 $fileError = $files['receipt_image']['error'];
                 if ($fileError !== UPLOAD_ERR_OK && $fileError !== UPLOAD_ERR_NO_FILE) {
                     if ($fileError === UPLOAD_ERR_INI_SIZE || $fileError === UPLOAD_ERR_FORM_SIZE) {
@@ -414,8 +425,19 @@ class ReceiptController {
 
             $filePath = null;
 
-            // Handle file upload
-            if (isset($files['receipt_image'])) {
+            // Check if temporary uploaded file via QR Code was submitted
+            $tempImage = trim($body['temp_receipt_image'] ?? '');
+            if (!empty($tempImage)) {
+                $tempImage = basename($tempImage);
+                $uploadDir = dirname(__DIR__, 3) . '/public/uploads/';
+                if (file_exists($uploadDir . $tempImage)) {
+                    $filePath = '/uploads/' . $tempImage;
+                } else {
+                    throw new Exception("ไม่พบไฟล์แนบชั่วคราวในระบบ กรุณาลองอัปโหลดใหม่อีกครั้ง");
+                }
+            }
+            // Handle standard file upload
+            elseif (isset($files['receipt_image'])) {
                 $fileError = $files['receipt_image']['error'];
                 if ($fileError !== UPLOAD_ERR_OK && $fileError !== UPLOAD_ERR_NO_FILE) {
                      if ($fileError === UPLOAD_ERR_INI_SIZE || $fileError === UPLOAD_ERR_FORM_SIZE) {
@@ -499,6 +521,40 @@ class ReceiptController {
         } catch (Exception $e) {
             $_SESSION['receipt_form_error'] = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
             $response->redirect("/admin/receipts/edit/{$id}");
+        }
+    }
+
+    public function generateToken(Request $request, Response $response) {
+        try {
+            $db = Database::getConnection();
+            
+            // Generate secure random token
+            $token = bin2hex(random_bytes(16));
+            
+            // Expires in 10 minutes
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+            
+            // Insert token record into database
+            $stmt = $db->prepare("INSERT INTO temporary_tokens (token, expires_at) VALUES (:token, :expires_at)");
+            $stmt->execute(['token' => $token, 'expires_at' => $expiresAt]);
+            
+            // Build absolute URL for QR Code
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
+            $host = $_SERVER['HTTP_HOST'];
+            
+            $basePath = Request::getBasePath();
+            $uploadUrl = "$protocol://$host$basePath/mobile/receipt/upload?token=$token";
+            
+            return $response->json([
+                'success' => true,
+                'token' => $token,
+                'url' => $uploadUrl
+            ]);
+        } catch (Exception $e) {
+            return $response->json([
+                'success' => false,
+                'message' => 'Error generating token: ' . $e->getMessage()
+            ]);
         }
     }
 }

@@ -28,6 +28,13 @@
             fileName: '',
             fileSize: '',
             isPdf: false,
+            tempImage: '',
+            qrModalOpen: false,
+            qrToken: '',
+            qrUrl: '',
+            pollInterval: null,
+            isQrLoading: false,
+            qrError: '',
             get pricePerLiter() {
                 if (this.liters > 0) {
                     return (this.amount / this.liters).toFixed(2);
@@ -41,11 +48,96 @@
                     const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
                     this.fileSize = sizeInMb + ' MB';
                     this.isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                    this.tempImage = ''; // Clear mobile upload if desktop file selected
                 } else {
                     this.fileName = '';
                     this.fileSize = '';
                     this.isPdf = false;
                 }
+            },
+            async startMobileUpload() {
+                this.isQrLoading = true;
+                this.qrError = '';
+                this.qrModalOpen = true;
+                
+                try {
+                    const basePath = '<?= \App\Core\Request::getBasePath() ?>';
+                    const response = await fetch(`${basePath}/admin/receipts/generate-token`);
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.message || 'ไม่สามารถสร้างรหัสสแกนได้');
+                    }
+                    
+                    this.qrToken = data.token;
+                    this.qrUrl = data.url;
+                    this.isQrLoading = false;
+                    
+                    await this.loadQrLibrary();
+                    
+                    const qrContainer = document.getElementById('qrcode_container');
+                    qrContainer.innerHTML = '';
+                    new QRCode(qrContainer, {
+                        text: this.qrUrl,
+                        width: 160,
+                        height: 160,
+                        colorDark: '#090d16',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    
+                    this.startPolling();
+                } catch (err) {
+                    this.isQrLoading = false;
+                    this.qrError = err.message || 'เกิดข้อผิดพลาดในการโหลด QR Code';
+                }
+            },
+            loadQrLibrary() {
+                return new Promise((resolve, reject) => {
+                    if (window.QRCode) {
+                        resolve();
+                        return;
+                    }
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('ไม่สามารถโหลดไลบรารีสำหรับสร้าง QR Code ได้'));
+                    document.head.appendChild(script);
+                });
+            },
+            startPolling() {
+                if (this.pollInterval) clearInterval(this.pollInterval);
+                
+                const basePath = '<?= \App\Core\Request::getBasePath() ?>';
+                this.pollInterval = setInterval(async () => {
+                    try {
+                        const response = await fetch(`${basePath}/api/receipts/check-token?token=${this.qrToken}`);
+                        const data = await response.json();
+                        
+                        if (!data.success) {
+                            this.stopPolling();
+                            this.qrError = data.message || 'เซสชันสแกนหมดอายุการใช้งานแล้ว';
+                            return;
+                        }
+                        
+                        if (data.uploaded) {
+                            this.tempImage = data.filename;
+                            this.fileName = data.filename;
+                            this.fileSize = 'อัปโหลดจากมือถือ';
+                            this.isPdf = data.filename.toLowerCase().endsWith('.pdf');
+                            this.stopPolling();
+                        }
+                    } catch (err) {
+                        console.error('Polling error:', err);
+                    }
+                }, 2000);
+            },
+            stopPolling() {
+                if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = null;
+                }
+                this.qrModalOpen = false;
             }
         }">
 
@@ -132,15 +224,23 @@
 
                 <!-- Attachment image/document file -->
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-slate-400 mb-2">
-                        แนบหลักฐานสลิปใบเสร็จ (แนะนำไฟล์ PDF หรือไฟล์ภาพ JPG, PNG, WEBP - สามารถอัปโหลดย้อนหลังได้ภายหลัง)
-                    </label>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-xs font-semibold text-slate-400">
+                            แนบหลักฐานสลิปใบเสร็จ (แนะนำไฟล์ PDF หรือไฟล์ภาพ JPG, PNG, WEBP - สามารถอัปโหลดย้อนหลังได้ภายหลัง)
+                        </label>
+                        <button type="button" @click="startMobileUpload()" class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 text-[10px] rounded-lg font-medium transition cursor-pointer">
+                            <i class="fa-solid fa-qrcode"></i> อัปโหลดผ่านมือถือด้วย QR Code
+                        </button>
+                    </div>
+                    
+                    <input type="hidden" name="temp_receipt_image" x-model="tempImage">
                     
                     <div class="relative group cursor-pointer">
                         <!-- Hidden file input but covers the entire area -->
                         <input id="receipt_image" name="receipt_image" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf"
                             @change="handleFileChange"
-                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            ::required="!tempImage && false">
                         
                         <!-- Premium UI container -->
                         <div class="border-2 border-dashed rounded-2xl p-6 text-center transition-all duration-200"
@@ -170,14 +270,14 @@
                                 </div>
                                 <div>
                                     <p class="text-xs font-bold text-slate-200 truncate max-w-md mx-auto" x-text="fileName"></p>
-                                    <p class="text-[10px] text-slate-500 mt-1" x-text="'ขนาดไฟล์: ' + fileSize"></p>
+                                    <p class="text-[10px] text-slate-500 mt-1" x-text="tempImage ? 'ไฟล์อัปโหลดจากอุปกรณ์เคลื่อนที่' : 'ขนาดไฟล์: ' + fileSize"></p>
                                 </div>
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold tracking-wider uppercase"
                                     :class="isPdf ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'">
                                     <i class="fa-solid fa-circle-check text-[10px]"></i>
                                     <span x-text="isPdf ? 'เอกสาร PDF พร้อมบันทึก' : 'รูปภาพหลักฐานพร้อมบันทึก'"></span>
                                 </div>
-                                <p class="text-[10px] text-slate-500 hover:text-slate-400 transition underline cursor-pointer pt-1" @click.prevent="document.getElementById('receipt_image').value = ''; fileName = ''; fileSize = ''; isPdf = false;">
+                                <p class="text-[10px] text-slate-500 hover:text-slate-400 transition underline cursor-pointer pt-1" @click.prevent="document.getElementById('receipt_image').value = ''; tempImage = ''; fileName = ''; fileSize = ''; isPdf = false;">
                                     เปลี่ยนไฟล์ที่ต้องการแนบ
                                 </p>
                             </div>
@@ -197,5 +297,50 @@
                 </button>
             </div>
         </form>
+
+        <!-- QR Code Upload Modal Overlay -->
+        <div x-show="qrModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" x-cloak style="display: none;">
+            <div class="w-full max-w-sm glass-panel p-6 rounded-2xl border border-slate-800 text-center relative" @click.away="stopPolling()">
+                <!-- Close Button -->
+                <button type="button" @click="stopPolling()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+
+                <!-- Icon -->
+                <div class="inline-flex h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 items-center justify-center text-emerald-450 mb-4">
+                    <i class="fa-solid fa-qrcode text-xl"></i>
+                </div>
+
+                <h3 class="text-sm font-bold text-white mb-1">สแกน QR Code ด้วยมือถือ</h3>
+                <p class="text-[11px] text-slate-400 font-light mb-5">ใช้กล้องโทรศัพท์มือถือสแกนเพื่อเข้าหน้าอัปโหลดรูปภาพใบเสร็จ</p>
+
+                <!-- QR Display Area -->
+                <div class="flex items-center justify-center bg-white p-4 rounded-xl max-w-[192px] mx-auto mb-4 border border-slate-200">
+                    <!-- Loading state -->
+                    <div x-show="isQrLoading" class="py-12 text-slate-600 text-xs">
+                        <i class="fa-solid fa-circle-notch animate-spin text-lg text-indigo-500"></i>
+                        <p class="mt-2 font-medium">กำลังเตรียม QR Code...</p>
+                    </div>
+
+                    <!-- Error state -->
+                    <div x-show="qrError" class="py-8 text-rose-500 text-xs">
+                        <i class="fa-solid fa-circle-exclamation text-lg"></i>
+                        <p class="mt-2" x-text="qrError"></p>
+                    </div>
+
+                    <!-- The QR container -->
+                    <div id="qrcode_container" x-show="!isQrLoading && !qrError" class="h-[160px] w-[160px]"></div>
+                </div>
+
+                <!-- Info message -->
+                <div class="text-[10px] text-slate-400 font-light space-y-1 bg-slate-900/30 border border-slate-850 p-3 rounded-lg leading-relaxed">
+                    <p class="text-emerald-450 font-semibold flex items-center justify-center gap-1">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span> 
+                        ระบบกำลังรอไฟล์จากมือถือของคุณ...
+                    </p>
+                    <p>เมื่อถ่ายรูปและส่งไฟล์เรียบร้อย หน้านี้จะปิดตัวลงโดยอัตโนมัติ</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

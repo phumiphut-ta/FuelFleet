@@ -1,6 +1,7 @@
 -- Drop tables if they exist to allow clean reinstall
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS system_settings;
+DROP TABLE IF EXISTS temporary_tokens;
 DROP TABLE IF EXISTS report_print_log;
 DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS booking_cancel_log;
@@ -290,4 +291,14 @@ INSERT INTO booking_agreements (agreement_text, sort_order) VALUES
 ('ผู้ขอใช้รถจะต้องดูแลความสะอาดและรักษาทรัพย์สินของทางราชการตลอดการเดินทาง', 1),
 ('ผู้ขอใช้รถจะต้องส่งคืนกุญแจรถพร้อมบันทึกเลขไมล์และแนบใบเสร็จน้ำมันทันทีหลังเสร็จสิ้นภารกิจ', 2),
 ('หากเกิดอุบัติเหตุหรือรถยนต์ขัดข้องในระหว่างเดินทาง ต้องรายงานผู้บริหารและประสานงานฝ่ายกองกลางทันที', 3);
+
+
+-- 19. temporary_tokens
+CREATE TABLE temporary_tokens (
+    token VARCHAR(64) PRIMARY KEY,
+    receipt_id INT DEFAULT 0,
+    uploaded_file VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
