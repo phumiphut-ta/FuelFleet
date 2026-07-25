@@ -544,5 +544,10 @@ OK (15 tests, 73 assertions)
     - **การปรับปรุงแถวสรุปผลรวม (Footer Summary in Heat Maps)**:
       - ปรับรูปแบบยอดสรุปรวมทั้งหมดของตารางในหน้า [heatmap.php](file:///Users/phumiphut/.gemini/antigravity/playground/FuelFleet/src/Views/public/heatmap.php) ให้สอดคล้องกับคอลัมน์ใหม่ โดยจะคำนวณยอดรวมโควต้า ยอดรวมการใช้จริง และยอดคงเหลือรวมแสดงในช่องเดียวกันอย่างสวยงามเป็นระเบียบเรียบร้อย
 
+  - **การแก้ไขข้อผิดพลาดหน้า 404 เมื่อไม่ได้ Login แล้วเปิดหน้าที่ต้อง Login (Subdirectory Login Redirect Bug Fix)**:
+    - **สาเหตุของบั๊ก**: ระบบตรวจสอบสิทธิ์ใน [AuthMiddleware.php](file:///Users/phumiphut/.gemini/antigravity/playground/FuelFleet/src/Core/AuthMiddleware.php) เดิมใช้วิธีเปลี่ยนเส้นทางโดยการส่งค่า Location header แบบคงที่คือ `header("Location: /admin/login");` ซึ่งจะนำทางเบราว์เซอร์ไปยัง Root Domain (เช่น `http://localhost/admin/login`) ตรงๆ ทำให้หากนำโปรเจกต์ไปรันภายใต้ไดเรกทอรีย่อย (Subdirectory/IIS Sub-Application) จะทำให้เบราว์เซอร์วิ่งไปเปิดหน้าที่ไม่มีอยู่จริงจนเกิดข้อผิดพลาด 404
+    - **การแก้ไข**: ปรับปรุงเมธอด `checkAdmin()` ใน [AuthMiddleware.php](file:///Users/phumiphut/.gemini/antigravity/playground/FuelFleet/src/Core/AuthMiddleware.php) ให้ทำการตรวจสอบและปะหน้าด้วย Base Path ของโปรเจกต์ที่ได้จาก `Request::getBasePath()` ก่อนจะส่งต่อเป็น Location Header เสมอ (ได้เป็น `Location: [basePath]/admin/login`)
+    - **การยืนยันผลการทดสอบ**: รันชุดทดสอบด้วย `composer test` ผ่านการทำงานที่ถูกต้อง 100% (68 Tests) ไม่มีส่วนใดในระบบทำงานผิดพลาด
+
 
 

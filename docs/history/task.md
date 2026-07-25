@@ -251,4 +251,10 @@
 - [x] Run automated test suite (`composer test`) to confirm success
 - [x] Commit and push changes to remote Git repository
 
+## Subdirectory Login Redirect Bug Fix (แก้ไขบั๊กการ Redirect หน้าที่ต้อง Login ไปยัง Root Domain ทำให้เกิด 404)
+- [x] Fix `AuthMiddleware::checkAdmin()` redirect URL by prepending `Request::getBasePath()` to the location path
+- [x] Run automated test suite (`composer test`) to verify correctness
+- [x] Commit changes to local Git repository
+
+
 
